@@ -18,3 +18,6 @@ class Competition:
 
     def databaseErrorCallback(self, error_id):
         self.db_error_id = error_id
+
+    def delete(self):
+        self.db.deleteCompetition(self.comp_id)

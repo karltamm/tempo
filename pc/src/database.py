@@ -1,6 +1,8 @@
+from os import curdir
 import sqlite3
 from sqlite3 import Error
 import enum
+from sqlite3.dbapi2 import Cursor
 
 
 class DB_Errors(enum.Enum):
@@ -138,3 +140,17 @@ class CompetitionDB:
 
     def close(self):
         self.con.close()
+
+    def deleteCompetition(self, competition_id):
+        self.errorCallback(DB_Errors.none)
+
+        try:
+            delete_comp_sql = "DELETE FROM competitions WHERE id=?"
+            delete_entries = "DELETE FROM comp_entries WHERE comp_id=?"
+            cursor = self.con.cursor()
+            cursor.execute(delete_comp_sql, (competition_id,))
+            cursor.execute(delete_entries, (competition_id,))
+            self.con.commit()
+        except Error as error:
+            self.errorCallback(DB_Errors.delete_data)
+            print(error)
