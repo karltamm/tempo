@@ -1,6 +1,5 @@
 from PySide6.QtWidgets import (
     QMainWindow,
-    QApplication,
     QPushButton,
     QWidget,
     QVBoxLayout,
@@ -9,26 +8,32 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QHBoxLayout,
 )
-from PySide6.QtGui import QPalette, QColor
+
+from database import CompetitionDB
+from competition import Competition
 
 APP_WIDTH = 600
 APP_HEIGHT = 600
 
 
-class Color(QWidget):
-    def __init__(self, color):
-        super().__init__()
-        self.setAutoFillBackground(True)
-        palette = self.palette()
-        palette.setColor(QPalette.Window, QColor(color))
-        self.setPalette(palette)
+def clearLayout(layout):
+    if "Layout" in str(type(layout)):
+        while layout.count():
+            child = layout.takeAt(0)
+
+            if child.layout():
+                # Child is another layout
+                clearLayout(child)  # recursion
+            elif child.widget():
+                # Child is actual widget
+                child.widget().deleteLater()
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # self.resize(APP_WIDTH, APP_HEIGHT)
+        self.resize(APP_WIDTH, APP_HEIGHT)
         self.setWindowTitle("Tempo")
 
         # All pages
@@ -81,94 +86,153 @@ class CompetitionsManager(QStackedWidget):
     def __init__(self, openMainMenu):
         super().__init__()
 
-        self.competitions_list = CompetitionsList(openMainMenu, self.openCompetition)
-        self.competition = Competition(self.showCompetitionsList)
+        self.openMainMenu = openMainMenu
+        self.competition_data = Competition()
+        self.prepareUI()
+
+    def prepareUI(self):
+        self.competitions_list = CompetitionsList(
+            self.openMainMenu, self.openCompetitionUI, self.addCompetition
+        )
+        self.competition_ui = CompetitionUI(
+            self.competition_data, self.showCompetitionsList, self.deleteCompetition
+        )
 
         self.addWidget(self.competitions_list)
-        self.addWidget(self.competition)
+        self.addWidget(self.competition_ui)
 
-    def openCompetition(self, name, competition_id):
-        self.setCurrentWidget(self.competition)
-        self.competition.openCompetition(name, competition_id)
+    def openCompetitionUI(self, competition_name, competition_id):
+        self.setCurrentWidget(self.competition_ui)
+        self.competition_ui.openCompetition(competition_name, competition_id)
 
     def showCompetitionsList(self):
         self.setCurrentWidget(self.competitions_list)
 
+    def addCompetition(self, competition_name):
+        self.competition_data.create(competition_name)
+        self.competitions_list.updateListOfCompetitions()
+
+    def deleteCompetition(self):
+        self.competitions_list.updateListOfCompetitions()
+        self.showCompetitionsList()
+
 
 class CompetitionsList(QWidget):
-    def __init__(self, openMainMenu, openCompetition):
+    def __init__(self, openMainMenu, openCompetitionUI, addCompetition):
         super().__init__()
-        # Header
-        back_btn = QPushButton("Back")
-        back_btn.clicked.connect(openMainMenu)
 
+        self.openCompetitionUI = openCompetitionUI
+        self.openMainMenu = openMainMenu
+        self.addCompetition = addCompetition
+
+        self.generateUI()
+
+    def generateUI(self):
+        self.generateHeader()
+        self.generateListOfCompetions()
+        self.generateMainLayout()
+
+    def generateHeader(self):
+        back_btn = QPushButton("Back")
+        back_btn.clicked.connect(self.openMainMenu)
         page_title = QLabel("Competitions")
 
-        header = QHBoxLayout()
-        header.addWidget(back_btn)
-        header.addWidget(page_title)
+        self.header = QHBoxLayout()
+        self.header.addWidget(back_btn)
+        self.header.addWidget(page_title)
 
-        # List of competitions
-        competitions = QVBoxLayout()
-        competitions.addWidget(CompetitionsListItem(openCompetition, "Race1", 1))
-        competitions.addWidget(CompetitionsListItem(openCompetition, "Race2", 1))
-        competitions.addWidget(CompetitionsListItem(openCompetition, "Race2", 1))
+    def generateListOfCompetions(self):
+        self.list_of_competitions = QVBoxLayout()
 
-        # Page
-        main_layout = QGridLayout()
-        main_layout.addLayout(header, 0, 0)
-        main_layout.addLayout(competitions, 1, 0)
+        create_competition_btn = QPushButton("Create competition")
+        create_competition_btn.clicked.connect(lambda: self.addCompetition("Test"))
+        self.list_of_competitions.addWidget(create_competition_btn)
 
-        self.setLayout(main_layout)
+        competition_data = CompetitionDB().getListOfCompetitions()
+        for competition in competition_data:
+            self.list_of_competitions.addWidget(
+                CompetitionsListItem(
+                    self.openCompetitionUI, competition["name"], competition["id"]
+                )
+            )
+
+    def generateMainLayout(self):
+        self.main_layout = QGridLayout()
+        self.setLayout(self.main_layout)
+
+        self.main_layout.addLayout(self.header, 0, 0)
+        self.main_layout.addLayout(self.list_of_competitions, 1, 0)
+
+    def updateListOfCompetitions(self):
+        clearLayout(self.list_of_competitions)
+        self.generateListOfCompetions()
+        self.main_layout.addLayout(self.list_of_competitions, 1, 0)
 
 
 class CompetitionsListItem(QWidget):
-    def __init__(self, openCompetition, name, competition_id):
+    def __init__(self, openCompetitionUI, competition_name, competition_id):
         super().__init__()
 
-        name = QLabel(name)
+        name_label = QLabel(competition_name)
         open_btn = QPushButton("Open")
-        open_btn.clicked.connect(lambda: openCompetition(name, competition_id))
+        open_btn.clicked.connect(
+            lambda: openCompetitionUI(competition_name, competition_id)
+        )
 
         layout = QHBoxLayout()
-        layout.addWidget(name)
+        layout.addWidget(name_label)
         layout.addWidget(open_btn)
 
         self.setLayout(layout)
 
 
-class Competition(QWidget):
-    def __init__(self, showCompetitionsList):
+class CompetitionUI(QWidget):
+    def __init__(self, competition_data, showCompetitionsList, deleteCompetition):
         super().__init__()
 
-        self.competition_name = None
-        self.competition_id = None
+        self.competition_data = competition_data
         self.showCompetitionsList = showCompetitionsList
-
-    def openCompetition(self, name, competition_id):
-        self.competition_name = name
-        self.competition_id = competition_id
+        self.deleteCompetitionCallback = deleteCompetition
 
         self.prepareUI()
 
+    def openCompetition(self, competition_name, competition_id):
+        self.competition_data.resume(competition_name, competition_id)
+
+        self.updateUI()
+
     def prepareUI(self):
-        # Header
+        self.generateHeader()
+        self.generateCompetitionControlUI()
+        self.generateLayout()
+
+    def generateHeader(self):
         back_btn = QPushButton("Back")
         back_btn.clicked.connect(self.showCompetitionsList)
+        self.page_title = QLabel(self.competition_data.name)
 
-        page_title = QLabel(self.competition_name)
+        self.header = QHBoxLayout()
+        self.header.addWidget(back_btn)
+        self.header.addWidget(self.page_title)
 
-        header = QHBoxLayout()
-        header.addWidget(back_btn)
-        header.addWidget(page_title)
+    def generateCompetitionControlUI(self):
+        self.add_new_entry_btn = QPushButton("Add new entry")
+        self.delete_competition_btn = QPushButton("Delete competition")
+        self.delete_competition_btn.clicked.connect(self.deleteCompetition)
 
-        # Page
-        main_layout = QGridLayout()
-        main_layout.addLayout(header, 0, 0)
+        self.control_layout = QGridLayout()
+        self.control_layout.addWidget(self.add_new_entry_btn, 0, 0)
+        self.control_layout.addWidget(self.delete_competition_btn, 0, 1)
 
-        self.setLayout(main_layout)
+    def generateLayout(self):
+        self.main_layout = QGridLayout()
+        self.main_layout.addLayout(self.header, 0, 0)
+        self.main_layout.addLayout(self.control_layout, 1, 0)
+        self.setLayout(self.main_layout)
 
+    def updateUI(self):
+        self.page_title.setText(self.competition_data.name)
 
-app = QApplication()
-window = MainWindow()
-app.exec()
+    def deleteCompetition(self):
+        self.competition_data.delete()
+        self.deleteCompetitionCallback()

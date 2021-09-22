@@ -1,25 +1,31 @@
+from database import CompetitionDB
+
+
 class Competition:
-    def __init__(self, database):
-        self.competition_id = None
-        self.db = database  # class CompetitionDB object
+    def __init__(self):
+        self.id = None
+        self.name = None
+        self.db = CompetitionDB()
 
-    def new(self, name):
-        self.competition_id = self.db.addCompetition(name)
+    def create(self, competition_name):
+        self.name = competition_name
+        self.id = self.db.addCompetition(competition_name)
 
-    def resume(self, competition_id):
-        self.competition_id = competition_id
+    def resume(self, competition_name, competition_id):
+        self.name = competition_name
+        self.id = competition_id
 
     def delete(self):
-        self.db.deleteCompetition(self.competition_id)
-        self.competition_id = None
+        self.db.deleteCompetition(self.id)
+        self.id = None
+        self.name = None
 
     def addEntry(self, tracking_data):
         for lap_time in tracking_data["lap_times"]:
-            self.db.addEntry(
-                self.competition_id, tracking_data["robot_name"], lap_time)
+            self.db.addEntry(self.id, tracking_data["robot_name"], lap_time)
 
     def deleteEntry(self, entry_id):
         self.db.deleteEntry(entry_id)
 
     def getLeaderboard(self):
-        return self.db.getCompetitionLeaderboard(self.competition_id)
+        return self.db.getCompetitionLeaderboard(self.id)
