@@ -7,6 +7,8 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QStackedWidget,
     QHBoxLayout,
+    QDialog,
+    QDialogButtonBox,
 )
 
 from database import CompetitionDB
@@ -123,7 +125,7 @@ class CompetitionsList(QWidget):
 
         self.openCompetitionUI = openCompetitionUI
         self.openMainMenu = openMainMenu
-        self.addCompetition = addCompetition
+        self.addCompetitionCallback = addCompetition
 
         self.generateUI()
 
@@ -145,7 +147,7 @@ class CompetitionsList(QWidget):
         self.list_of_competitions = QVBoxLayout()
 
         create_competition_btn = QPushButton("Create competition")
-        create_competition_btn.clicked.connect(lambda: self.addCompetition("Test"))
+        create_competition_btn.clicked.connect(self.createCompetition)
         self.list_of_competitions.addWidget(create_competition_btn)
 
         competition_data = CompetitionDB().getListOfCompetitions()
@@ -167,6 +169,35 @@ class CompetitionsList(QWidget):
         clearLayout(self.list_of_competitions)
         self.generateListOfCompetions()
         self.main_layout.addLayout(self.list_of_competitions, 1, 0)
+
+    def createCompetition(self):
+        # self.addCompetitionCallback("Test")
+        CreateCompetitionDialog()
+
+
+class CreateCompetitionDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+
+        buttons = QDialogButtonBox.Save | QDialogButtonBox.Cancel
+        btn_box = QDialogButtonBox(buttons)
+        btn_box.accepted.connect(self.createCompetition)
+        btn_box.rejected.connect(self.cancel)
+
+        layout = QVBoxLayout()
+        layout.addWidget(btn_box)
+        layout.addWidget(btn_box)
+        self.setLayout(layout)
+
+        self.exec()
+
+    def createCompetition(self):
+        print("createCompetition")
+        self.accept()
+
+    def cancel(self):
+        print("close")
+        self.reject()
 
 
 class CompetitionsListItem(QWidget):
