@@ -1,7 +1,7 @@
 class Tracking:
     """Class to track information about individual robots on the track"""
 
-    def __init__(self, name):
+    def __init__(self, name=""):
         self.name = name
         self.lap_times = {}
         self.lap_id = 1
@@ -30,22 +30,22 @@ class Tracking:
         return {"robot_name": self.name, "lap_times": self.lap_times}
 
 
-""" TRACKING TESTING """
-robot1 = Tracking("Terminaator")
-robot1.addTime(77123)
-robot1.addTime(82000)
-robot1.addTime(44555)
-robot1.addTime(65234)
-robot1.removeTime(2)
-robot1.removeTime(7)
+# """ TRACKING TESTING """
+# robot1 = Tracking("Terminaator")
+# robot1.addTime(77123)
+# robot1.addTime(82000)
+# robot1.addTime(44555)
+# robot1.addTime(65234)
+# robot1.removeTime(2)
+# robot1.removeTime(7)
 
-robot2 = Tracking("ERROR")
-robot2.changeName("WALL-E")
+# robot2 = Tracking("ERROR")
+# robot2.changeName("WALL-E")
 
-robots = [robot1, robot2]
-for robot in robots:
-    robot.printData()
-    print("")
+# robots = [robot1, robot2]
+# for robot in robots:
+#     robot.printData()
+#     print("")
 
-print(f"\n\nDATA: {robot1.getData()}")
-""" TESTING END """
+# print(f"\n\nDATA: {robot1.getData()}")
+# """ TESTING END """

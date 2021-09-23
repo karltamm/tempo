@@ -11,10 +11,14 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QLineEdit,
     QMessageBox,
+    QTableView,
+    QHeaderView,
+    QListView,
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QAbstractTableModel, QAbstractListModel
 
 from database import CompetitionDB
+from tracking import Tracking
 
 APP_WIDTH = 300
 APP_HEIGHT = 300
@@ -353,56 +357,135 @@ class TrackingUI(QWidget):
 
         self.competition_name = None
         self.competition_id = None
+        self.tracking_data = Tracking()
+        self.lap_times_list_model = LapTimesListModel()
 
         self.setupLayout()
 
     def generateHeader(self):
         page_title = QLabel("Tracking")
 
+        test_btn = QPushButton("Test")
+        test_btn.clicked.connect(self.addDummyData)
+
         self.header = QHBoxLayout()
         self.header.addWidget(page_title)
+        self.header.addWidget(test_btn)
 
-    def generateControlSection(self):
-        start_btn = QPushButton("Start")
+    def generateRobotNameSection(self):
+        robot_name_label = QLabel("Robot name")
+        self.robot_name_input = QLineEdit("")
 
-        self.robot_name_label = QLabel("Robot name")
-        rename_robot_btn = QPushButton("Rename robot")
+        self.robot_name_layout = QHBoxLayout()
+        self.robot_name_layout.addWidget(robot_name_label)
+        self.robot_name_layout.addWidget(self.robot_name_input)
 
-        robot_name_layout = QHBoxLayout()
-        robot_name_layout.addWidget(self.robot_name_label)
-        robot_name_layout.addWidget(rename_robot_btn)
+    def addDummyData(self):
+        self.tracking_data.changeName("Kana")
+        self.robot_name_input.setText("Kana")
+        self.tracking_data.addTime(100)
 
-        self.control_layout = QVBoxLayout()
-        self.control_layout.addWidget(start_btn)
-        self.control_layout.addLayout(robot_name_layout)
+        all_lap_times = self.tracking_data.getData()["lap_times"]
+        self.lap_times_list_model.updateData(all_lap_times)
 
-    def generateResultsLayout(self):
-        save_btn = QPushButton("Save Results")
+    def generateLapTimesList(self):
+        list_title = QLabel("Lap times")
+
+        lap_times_list_view = QListView()
+        lap_times_list_view.setModel(self.lap_times_list_model)
+
+        delete_time_btn = QPushButton("Delete Time")
+
+        self.lap_times_list = QVBoxLayout()
+        self.lap_times_list.addWidget(list_title)
+        self.lap_times_list.addWidget(lap_times_list_view)
+        self.lap_times_list.addWidget(delete_time_btn)
+
+    def generateEndTrackingUI(self):
+        save_btn = QPushButton("Save")
         cancel_btn = QPushButton("Discard")
         cancel_btn.clicked.connect(
             lambda: self.openCompetitionUI(self.competition_name, self.competition_id)
         )
 
-        results_control_layout = QHBoxLayout()
-        results_control_layout.addWidget(save_btn)
-        results_control_layout.addWidget(cancel_btn)
-
-        self.results_list = QVBoxLayout()
-
-        self.results_container = QVBoxLayout()
-        self.results_container.addLayout(results_control_layout)
-        self.results_container.addLayout(self.results_list)
+        self.end_tracking_layout = QHBoxLayout()
+        self.end_tracking_layout.addWidget(save_btn)
+        self.end_tracking_layout.addWidget(cancel_btn)
 
     def setupLayout(self):
         self.generateHeader()
-        self.generateControlSection()
-        self.generateResultsLayout()
+        self.generateRobotNameSection()
+        self.generateLapTimesList()
+        self.generateEndTrackingUI()
 
         main_layout = QVBoxLayout()
-        main_layout.addLayout(self.header)
-        main_layout.addLayout(self.control_layout)
-        main_layout.addLayout(self.results_container)
         self.setLayout(main_layout)
+        main_layout.addLayout(self.header)
+        main_layout.addLayout(self.robot_name_layout)
+        main_layout.addLayout(self.lap_times_list)
+        main_layout.addLayout(self.end_tracking_layout)
 
     def setCompetitionInfo(self, data):
         self.competition_name, self.competition_id = data
+
+
+class LapTimesTableModel(QAbstractTableModel):
+    def __init__(self):
+        super().__init__()
+
+        self.lap_times = []  # 2D array
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            return self.lap_times[index.row()][index.column()]
+
+    def rowCount(self, index):
+        # Num of rows in this 2D array
+        return len(self.lap_times)
+
+    def columnCount(self, index):
+        # Num of columns in first row (all rows have same length)
+        return len(self.lap_times[0])
+
+    def updateTable(self, data):
+        self.lap_times = []  # Clear old data
+
+        data = {1: 77123, 3: 44555, 4: 65234}
+
+        for lap_time_key in data:
+            lap_time = data[lap_time_key]
+            self.lap_times.append([lap_time])  # Create new row for lap time
+
+        self.layoutChanged.emit()  # Notify table view about data change
+
+    def headerData(self, section, orientation, role):
+        # section is the index of the column/row.
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return "Time"
+
+            if orientation == Qt.Vertical:
+                return ""  # None
+
+
+class LapTimesListModel(QAbstractListModel):
+    def __init__(self):
+        super().__init__()
+
+        self.lap_times = []
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            return self.lap_times[index.row()]
+
+    def rowCount(self, index):
+        return len(self.lap_times)
+
+    def updateData(self, data):
+        self.lap_times = []  # Clear
+
+        for lap_time_key in data:
+            lap_time = data[lap_time_key]
+            self.lap_times.append(lap_time)
+
+        self.layoutChanged.emit()  # Notify table view about data change
