@@ -10,14 +10,9 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QLineEdit,
-    QTableWidget,
-    QTableWidgetItem,
-    QListView,
-    QAbstractItemView,
     QMessageBox,
 )
-from PySide6 import QtCore
-from PySide6.QtCore import QAbstractListModel, Qt
+from PySide6.QtCore import Qt
 
 from database import CompetitionDB
 
@@ -85,12 +80,12 @@ class MainMenu(QWidget):
         competition_btn.clicked.connect(openCompetionsManager)
 
         menu_options = QVBoxLayout()
-        menu_options.setAlignment(QtCore.Qt.AlignLeft)
+        menu_options.setAlignment(Qt.AlignLeft)
         menu_options.addWidget(competition_btn)
 
         # Main layout
         main_layout = QVBoxLayout()
-        main_layout.setAlignment(QtCore.Qt.AlignTop)
+        main_layout.setAlignment(Qt.AlignTop)
         main_layout.addLayout(header)
         main_layout.addLayout(menu_options)
 
@@ -170,7 +165,7 @@ class CompetitionsList(QWidget):
 
     def generateMainLayout(self):
         main_layout = QVBoxLayout()
-        main_layout.setAlignment(QtCore.Qt.AlignTop)
+        main_layout.setAlignment(Qt.AlignTop)
         self.setLayout(main_layout)
 
         main_layout.addLayout(self.header)
@@ -359,42 +354,55 @@ class TrackingUI(QWidget):
         self.competition_name = None
         self.competition_id = None
 
+        self.setupLayout()
+
+    def generateHeader(self):
         page_title = QLabel("Tracking")
+
+        self.header = QHBoxLayout()
+        self.header.addWidget(page_title)
+
+    def generateControlSection(self):
         start_btn = QPushButton("Start")
 
-        header = QHBoxLayout()
-        header.addWidget(page_title)
-        header.addWidget(start_btn)
+        self.robot_name_label = QLabel("Robot name")
+        rename_robot_btn = QPushButton("Rename robot")
 
         robot_name_layout = QHBoxLayout()
-        robot_name_label = QLabel("Robot name")
-        rename_robot_btn = QPushButton("Rename robot")
-        robot_name_layout.addWidget(robot_name_label)
+        robot_name_layout.addWidget(self.robot_name_label)
         robot_name_layout.addWidget(rename_robot_btn)
 
-        lap_times_table = QTableWidget()
-        lap_times_table.setColumnCount(3)
-        lap_times_table.setHorizontalHeaderLabels(["#", "Time", ""])
+        self.control_layout = QVBoxLayout()
+        self.control_layout.addWidget(start_btn)
+        self.control_layout.addLayout(robot_name_layout)
 
-        lap_times_table.setItem(0, 0, QTableWidgetItem("1"))
-        lap_times_table.setItem(0, 1, QTableWidgetItem("01:01"))
-        lap_times_table.setItem(0, 2, QTableWidgetItem("Delete"))
-
-        save_btn = QPushButton("Save results")
-        cancel_btn = QPushButton("Cancel")
+    def generateResultsLayout(self):
+        save_btn = QPushButton("Save Results")
+        cancel_btn = QPushButton("Discard")
         cancel_btn.clicked.connect(
             lambda: self.openCompetitionUI(self.competition_name, self.competition_id)
         )
-        footer = QHBoxLayout()
-        footer.addWidget(save_btn)
-        footer.addWidget(cancel_btn)
 
-        layout = QVBoxLayout()
-        layout.addLayout(header)
-        layout.addLayout(robot_name_layout)
-        layout.addWidget(lap_times_table)
-        layout.addLayout(footer)
-        self.setLayout(layout)
+        results_control_layout = QHBoxLayout()
+        results_control_layout.addWidget(save_btn)
+        results_control_layout.addWidget(cancel_btn)
+
+        self.results_list = QVBoxLayout()
+
+        self.results_container = QVBoxLayout()
+        self.results_container.addLayout(results_control_layout)
+        self.results_container.addLayout(self.results_list)
+
+    def setupLayout(self):
+        self.generateHeader()
+        self.generateControlSection()
+        self.generateResultsLayout()
+
+        main_layout = QVBoxLayout()
+        main_layout.addLayout(self.header)
+        main_layout.addLayout(self.control_layout)
+        main_layout.addLayout(self.results_container)
+        self.setLayout(main_layout)
 
     def setCompetitionInfo(self, data):
         self.competition_name, self.competition_id = data
