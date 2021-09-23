@@ -11,11 +11,9 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QLineEdit,
     QMessageBox,
-    QTableView,
-    QHeaderView,
     QListView,
 )
-from PySide6.QtCore import Qt, QAbstractTableModel, QAbstractListModel
+from PySide6.QtCore import Qt, QAbstractListModel
 
 from database import CompetitionDB
 from tracking import Tracking
@@ -427,45 +425,6 @@ class TrackingUI(QWidget):
 
     def setCompetitionInfo(self, data):
         self.competition_name, self.competition_id = data
-
-
-class LapTimesTableModel(QAbstractTableModel):
-    def __init__(self):
-        super().__init__()
-
-        self.lap_times = []  # 2D array
-
-    def data(self, index, role):
-        if role == Qt.DisplayRole:
-            return self.lap_times[index.row()][index.column()]
-
-    def rowCount(self, index):
-        # Num of rows in this 2D array
-        return len(self.lap_times)
-
-    def columnCount(self, index):
-        # Num of columns in first row (all rows have same length)
-        return len(self.lap_times[0])
-
-    def updateTable(self, data):
-        self.lap_times = []  # Clear old data
-
-        data = {1: 77123, 3: 44555, 4: 65234}
-
-        for lap_time_key in data:
-            lap_time = data[lap_time_key]
-            self.lap_times.append([lap_time])  # Create new row for lap time
-
-        self.layoutChanged.emit()  # Notify table view about data change
-
-    def headerData(self, section, orientation, role):
-        # section is the index of the column/row.
-        if role == Qt.DisplayRole:
-            if orientation == Qt.Horizontal:
-                return "Time"
-
-            if orientation == Qt.Vertical:
-                return ""  # None
 
 
 class LapTimesListModel(QAbstractListModel):
