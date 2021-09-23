@@ -355,10 +355,11 @@ class TrackingUI(QWidget):
 
         self.competition_name = None
         self.competition_id = None
-        self.tracking_data = Tracking()
         self.lap_times_list_model = LapTimesListModel()
 
         self.setupLayout()
+
+        self.number = 0
 
     def generateHeader(self):
         page_title = QLabel("Tracking")
@@ -372,31 +373,44 @@ class TrackingUI(QWidget):
 
     def generateRobotNameSection(self):
         robot_name_label = QLabel("Robot name")
-        self.robot_name_input = QLineEdit("")
+
+        self.robot_name_input = QLineEdit()
 
         self.robot_name_layout = QHBoxLayout()
         self.robot_name_layout.addWidget(robot_name_label)
         self.robot_name_layout.addWidget(self.robot_name_input)
 
     def addDummyData(self):
-        self.tracking_data.changeName("Kana")
-        self.robot_name_input.setText("Kana")
-        self.tracking_data.addTime(100)
 
-        all_lap_times = self.tracking_data.getData()["lap_times"]
-        self.lap_times_list_model.updateData(all_lap_times)
+        self.lap_times_list_model.addTime(self.number)
+        self.number += 1
+        self.saveData()
+
+    def deleteSelectedTimes(self):
+        all_selected = self.lap_times_list_view.selectedIndexes()
+        for time in all_selected:
+            self.lap_times_list_model.removeTime(time.row())
+            self.lap_times_list_view.clearSelection()
+
+    def saveData(self):
+        robot_name = self.robot_name_input.text() or "Robot"
+        lap_times = self.lap_times_list_model.lap_times
+
+        print("robot_name: " + robot_name)
+        print("lap_times: " + str(lap_times))
 
     def generateLapTimesList(self):
         list_title = QLabel("Lap times")
 
-        lap_times_list_view = QListView()
-        lap_times_list_view.setModel(self.lap_times_list_model)
+        self.lap_times_list_view = QListView()
+        self.lap_times_list_view.setModel(self.lap_times_list_model)
 
         delete_time_btn = QPushButton("Delete Time")
+        delete_time_btn.clicked.connect(self.deleteSelectedTimes)
 
         self.lap_times_list = QVBoxLayout()
         self.lap_times_list.addWidget(list_title)
-        self.lap_times_list.addWidget(lap_times_list_view)
+        self.lap_times_list.addWidget(self.lap_times_list_view)
         self.lap_times_list.addWidget(delete_time_btn)
 
     def generateEndTrackingUI(self):
@@ -440,11 +454,10 @@ class LapTimesListModel(QAbstractListModel):
     def rowCount(self, index):
         return len(self.lap_times)
 
-    def updateData(self, data):
-        self.lap_times = []  # Clear
+    def addTime(self, time):
+        self.lap_times.append(time)
+        self.layoutChanged.emit()
 
-        for lap_time_key in data:
-            lap_time = data[lap_time_key]
-            self.lap_times.append(lap_time)
-
-        self.layoutChanged.emit()  # Notify table view about data change
+    def removeTime(self, time_index):
+        del self.lap_times[time_index]
+        self.layoutChanged.emit()
