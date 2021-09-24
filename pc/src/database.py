@@ -99,7 +99,7 @@ class CompetitionDB:
             print(error)
             return None
 
-    def addRobotLapTimes(self, competition_id, tracking_data):
+    def addRobotLapTimes(self, competition_id, robot_name, lap_times):
         try:
             entry_sql = (
                 "INSERT INTO comp_entries(competition_id,robot_name,lap_time,creation_time)"
@@ -109,12 +109,12 @@ class CompetitionDB:
             cursor = self.con.cursor()
             creation_time = math.floor(time.time())
 
-            for lap_time in tracking_data["lap_times"]:
+            for lap_time in lap_times:
                 cursor.execute(
                     entry_sql,
                     (
                         competition_id,
-                        tracking_data["robot_name"],
+                        robot_name,
                         lap_time,
                         creation_time,
                     ),
@@ -129,7 +129,7 @@ class CompetitionDB:
     def deleteRobotLapTime(self, entry_id):
         try:
             delete_entry_sql = "DELETE FROM comp_entries WHERE entry_id=?"
-            self.con.cursor().execute(delete_entry_sql, (entry_id,))
+            self.con.cursor().execute(delete_entry_sql, (str(entry_id),))
             self.con.commit()
             return True  # Entry was deleted successfully
         except Error as error:

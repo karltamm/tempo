@@ -12,8 +12,9 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QListView,
+    QTableView,
 )
-from PySide6.QtCore import Qt, QAbstractListModel
+from PySide6.QtCore import Qt, QAbstractListModel, QAbstractTableModel
 
 from database import CompetitionDB
 from tracking import Tracking
@@ -129,7 +130,7 @@ class CompetitionsManager(QStackedWidget):
 
     def openTrackingUI(self):
         self.setCurrentWidget(self.tracking_UI)
-        self.tracking_UI.setCompetitionInfo(self.competition_UI.competitionInfo())
+        self.tracking_UI.openTracking(self.competition_UI.competitionInfo())
 
 
 class CompetitionsList(QWidget):
@@ -313,9 +314,13 @@ class CompetitionUI(QWidget):
 
         self.page_title.setText(self.competition_name)
 
+        self.leaderboard_model.initData(competition_id)
+        self.setTableViewDefault()
+
     def prepareUI(self):
         self.generateHeader()
         self.generateCompetitionControlUI()
+        self.showLeaderboard()
         self.generateLayout()
 
     def generateHeader(self):
@@ -341,9 +346,92 @@ class CompetitionUI(QWidget):
 
         main_layout.addLayout(self.header)
         main_layout.addLayout(self.control_layout)
+        main_layout.addLayout(self.leaderboard_layout)
 
     def competitionInfo(self):
         return self.competition_name, self.competition_id
+
+    def setTableViewDefault(self):
+        self.leaderboard_view.clearSelection()
+        self.leaderboard_view.setColumnHidden(2, True)  # Hide entry ID
+        self.leaderboard_view.setSelectionBehavior(QTableView.SelectRows)
+
+    def showLeaderboard(self):
+        delete_lap_time_btn = QPushButton("Delete")
+        delete_lap_time_btn.clicked.connect(self.deleteEntry)
+
+        self.leaderboard_model = LeaderboardTableModel(self.competition_db)
+        self.leaderboard_model.updateTable()
+
+        self.leaderboard_view = QTableView()
+        self.leaderboard_view.setModel(self.leaderboard_model)
+        self.setTableViewDefault()
+
+        self.leaderboard_layout = QVBoxLayout()
+        self.leaderboard_layout.addWidget(self.leaderboard_view)
+        self.leaderboard_layout.addWidget(delete_lap_time_btn)
+
+    def deleteEntry(self):
+        selected = self.leaderboard_view.selectedIndexes()
+        if selected:
+            entry_index = selected[0].row()
+            self.leaderboard_model.removeEntry(entry_index)
+            self.setTableViewDefault()
+
+
+class LeaderboardTableModel(QAbstractTableModel):
+    def __init__(self, competition_db):
+        super().__init__()
+        self.table = []  # 2D array
+        self.competition_db = competition_db
+        self.competition_id = None
+
+    def initData(self, id):
+        self.competition_id = id
+        self.updateTable()
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            return self.table[index.row()][index.column()]
+
+    def removeEntry(self, entry_index):
+        entry_id = self.table[entry_index][2]  # ID is in the 3rd col
+        self.competition_db.deleteRobotLapTime(entry_id)
+        self.updateTable()
+
+    def rowCount(self, index):
+        # Num of rows in this 2D array
+        return len(self.table)
+
+    def columnCount(self, index):
+        # Num of columns in first row (all rows have same length)
+        return len(self.table[0])
+
+    def updateTable(self):
+        self.table = []  # Clear old data
+        data = self.competition_db.getCompetitionLeaderboard(self.competition_id)
+
+        if data:
+            for entry in data:
+                self.table.append(
+                    [entry["robot_name"], entry["lap_time"], entry["entry_id"]]
+                )  # Add new row thats has column about entry data
+        else:
+            self.table.append([])  # Add at least one row with column, otherwise error
+
+        self.layoutChanged.emit()  # Notify table view about data change
+
+    def headerData(self, section, orientation, role):
+        # section is the index of the column/row.
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                if section == 0:
+                    return "Robot"
+                elif section == 1:
+                    return "Lap Time"
+
+            if orientation == Qt.Vertical:
+                return ""  # None
 
 
 class TrackingUI(QWidget):
@@ -384,7 +472,6 @@ class TrackingUI(QWidget):
 
         self.lap_times_list_model.addTime(self.number)
         self.number += 1
-        self.saveData()
 
     def deleteSelectedTimes(self):
         all_selected = self.lap_times_list_view.selectedIndexes()
@@ -396,8 +483,9 @@ class TrackingUI(QWidget):
         robot_name = self.robot_name_input.text() or "Robot"
         lap_times = self.lap_times_list_model.lap_times
 
-        print("robot_name: " + robot_name)
-        print("lap_times: " + str(lap_times))
+        self.competition_db.addRobotLapTimes(self.competition_id, robot_name, lap_times)
+
+        self.openCompetitionUI(self.competition_name, self.competition_id)
 
     def generateLapTimesList(self):
         list_title = QLabel("Lap times")
@@ -415,6 +503,8 @@ class TrackingUI(QWidget):
 
     def generateEndTrackingUI(self):
         save_btn = QPushButton("Save")
+        save_btn.clicked.connect(self.saveData)
+
         cancel_btn = QPushButton("Discard")
         cancel_btn.clicked.connect(
             lambda: self.openCompetitionUI(self.competition_name, self.competition_id)
@@ -437,8 +527,12 @@ class TrackingUI(QWidget):
         main_layout.addLayout(self.lap_times_list)
         main_layout.addLayout(self.end_tracking_layout)
 
-    def setCompetitionInfo(self, data):
+    def openTracking(self, data):
         self.competition_name, self.competition_id = data
+
+        # Removes previously held data
+        self.lap_times_list_model.lap_times = []  # Clear
+        self.robot_name_input.setText("")
 
 
 class LapTimesListModel(QAbstractListModel):
