@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QListView,
     QTableView,
+    QApplication,
 )
 from PySide6.QtCore import Qt, QAbstractListModel, QAbstractTableModel
 
@@ -201,7 +202,7 @@ class CompetitionsList(QWidget):
             )
 
     def openCompetitionCreator(self):
-        CompetitionCreator(self, self.addCompetition)
+        InputDialog("Competition Name", self, self.addCompetition)
 
     def addCompetition(self, name):
         if self.competition_db.addCompetition(name):
@@ -243,6 +244,49 @@ class CompetitionListItem(QWidget):
         layout.addWidget(open_btn)
         layout.addWidget(delete_btn)
         self.setLayout(layout)
+
+
+class InputDialog(QDialog):
+    def __init__(self, input_label, parent=None, callback=None):
+        super().__init__(parent)
+
+        self.callback = callback or (lambda x: None)
+
+        input_label = QLabel(input_label)
+        self.input = QLineEdit()
+        self.input.textChanged.connect(self.validateInput)
+        self.input_feedback = QLabel()
+
+        buttons = QDialogButtonBox.Save | QDialogButtonBox.Cancel
+        btn_box = QDialogButtonBox(buttons)
+        btn_box.accepted.connect(self.save)
+        btn_box.rejected.connect(self.reject)
+
+        layout = QVBoxLayout()
+        layout.addWidget(input_label)
+        layout.addWidget(self.input)
+        layout.addWidget(self.input_feedback)
+        layout.addWidget(btn_box)
+        self.setLayout(layout)
+
+        self.exec()
+
+    def save(self):
+        input_val = self.input.text()
+        if self.validateInput(input_val):
+            self.callback(input_val)
+            self.accept()
+
+    def validateInput(self, value):
+        if not value:
+            self.input_feedback.setText("Too short")
+            return False
+
+        if len(value) > 20:
+            self.input_feedback.setText("Max 20 chars")
+            return False
+
+        return True
 
 
 class CompetitionCreator(QDialog):
@@ -357,7 +401,7 @@ class CompetitionUI(QWidget):
         self.leaderboard_view.setSelectionBehavior(QTableView.SelectRows)
 
     def showLeaderboard(self):
-        delete_lap_time_btn = QPushButton("Delete")
+        delete_lap_time_btn = QPushButton("Delete Time")
         delete_lap_time_btn.clicked.connect(self.deleteEntry)
 
         self.leaderboard_model = LeaderboardTableModel(self.competition_db)
@@ -462,11 +506,23 @@ class TrackingUI(QWidget):
     def generateRobotNameSection(self):
         robot_name_label = QLabel("Robot name")
 
-        self.robot_name_input = QLineEdit()
+        self.robot_name = QLabel("Robot")
+        rename_btn = QPushButton("Rename")
+        rename_btn.clicked.connect(self.openRenameDialog)
 
-        self.robot_name_layout = QHBoxLayout()
+        rename_layout = QHBoxLayout()
+        rename_layout.addWidget(self.robot_name)
+        rename_layout.addWidget(rename_btn)
+
+        self.robot_name_layout = QVBoxLayout()
         self.robot_name_layout.addWidget(robot_name_label)
-        self.robot_name_layout.addWidget(self.robot_name_input)
+        self.robot_name_layout.addLayout(rename_layout)
+
+    def openRenameDialog(self):
+        InputDialog("Rename Robot", self, self.renameRobot)
+
+    def renameRobot(self, name):
+        self.robot_name.setText(name)
 
     def addDummyData(self):
 
@@ -480,7 +536,7 @@ class TrackingUI(QWidget):
             self.lap_times_list_view.clearSelection()
 
     def saveData(self):
-        robot_name = self.robot_name_input.text() or "Robot"
+        robot_name = self.robot_name.text() or "Robot"
         lap_times = self.lap_times_list_model.lap_times
 
         self.competition_db.addRobotLapTimes(self.competition_id, robot_name, lap_times)
@@ -532,7 +588,7 @@ class TrackingUI(QWidget):
 
         # Removes previously held data
         self.lap_times_list_model.lap_times = []  # Clear
-        self.robot_name_input.setText("")
+        self.robot_name.setText("Robot")
 
 
 class LapTimesListModel(QAbstractListModel):
@@ -555,3 +611,17 @@ class LapTimesListModel(QAbstractListModel):
     def removeTime(self, time_index):
         del self.lap_times[time_index]
         self.layoutChanged.emit()
+
+
+# Test
+import os
+import sys
+
+# Make sure that this file runs in its folder!
+file_dir_path = os.path.dirname(sys.argv[0])  # sys.argv[0] == current file path
+os.chdir(file_dir_path)
+
+# Test
+app = QApplication()
+window = MainWindow()
+app.exec()
