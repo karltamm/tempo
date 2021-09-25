@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QListView,
     QTableView,
     QApplication,
+    QHeaderView,
 )
 from PySide6.QtCore import Qt, QAbstractListModel, QAbstractTableModel
 
@@ -289,56 +290,6 @@ class InputDialog(QDialog):
         return True
 
 
-class CompetitionCreator(QDialog):
-    def __init__(self, parent, addCompetitionCallback):
-        super().__init__(parent)
-
-        self.addCompetitionCallback = addCompetitionCallback
-
-        # Input to get name
-        input_label = QLabel("Competition name")
-        self.name_input = QLineEdit()
-        self.input_feedback = QLabel()
-
-        input_layout = QVBoxLayout()
-        input_layout.addWidget(input_label)
-        input_layout.addWidget(self.name_input)
-        input_layout.addWidget(self.input_feedback)
-
-        # Buttons to take action
-        buttons = QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        btn_box = QDialogButtonBox(buttons)
-        btn_box.accepted.connect(self.createCompetition)
-        btn_box.rejected.connect(self.reject)
-
-        # Set layout
-        main_layout = QVBoxLayout()
-        main_layout.addLayout(input_layout)
-        main_layout.addWidget(btn_box)
-        self.setLayout(main_layout)
-
-        self.exec()
-
-    def createCompetition(self):
-        name = self.name_input.text()
-        if self.nameIsOkay(name):
-            self.addCompetitionCallback(name)
-            self.accept()
-
-    def nameIsOkay(self, name):
-        name = str(name)
-
-        if not len(name):
-            self.input_feedback.setText("Too short")
-            return False
-
-        if len(name) > 20:
-            self.input_feedback.setText("Max 20 characters")
-            return False
-
-        return True
-
-
 class CompetitionUI(QWidget):
     def __init__(self, competition_db, showCompetitionsList, openTrackingUI):
         super().__init__()
@@ -359,12 +310,12 @@ class CompetitionUI(QWidget):
         self.page_title.setText(self.competition_name)
 
         self.leaderboard_model.initData(competition_id)
-        self.setTableViewDefault()
+        self.setTableViewConfiguration()
 
     def prepareUI(self):
         self.generateHeader()
-        self.generateCompetitionControlUI()
-        self.showLeaderboard()
+        self.generateTrackingButton()
+        self.generateLeaderboard()
         self.generateLayout()
 
     def generateHeader(self):
@@ -372,11 +323,11 @@ class CompetitionUI(QWidget):
         back_btn.clicked.connect(self.showCompetitionsList)
         self.page_title = QLabel(self.competition_name)
 
-        self.header = QHBoxLayout()
+        self.header = QVBoxLayout()
         self.header.addWidget(back_btn)
         self.header.addWidget(self.page_title)
 
-    def generateCompetitionControlUI(self):
+    def generateTrackingButton(self):
         track_robot_btn = QPushButton("Track Robot")
         track_robot_btn.clicked.connect(self.openTrackingUI)
 
@@ -393,34 +344,52 @@ class CompetitionUI(QWidget):
         main_layout.addLayout(self.leaderboard_layout)
 
     def competitionInfo(self):
+        # If competition page is opened, this info is nessercy to work with database
         return self.competition_name, self.competition_id
 
-    def setTableViewDefault(self):
-        self.leaderboard_view.clearSelection()
-        self.leaderboard_view.setColumnHidden(2, True)  # Hide entry ID
-        self.leaderboard_view.setSelectionBehavior(QTableView.SelectRows)
+    def setTableViewConfiguration(self):
+        # After competition page is (re)opened, make sure that table is displayed nicely
 
-    def showLeaderboard(self):
+        self.leaderboard_view.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+
+        self.leaderboard_view.clearSelection()
+        self.leaderboard_view.setSelectionBehavior(QTableView.SelectRows)
+        # self.leaderboard_view.setSelectionMode(QTableView.SingleSelection)
+
+        self.leaderboard_view.setColumnHidden(2, True)  # Hide entry ID
+
+        self.leaderboard_view.resizeColumnsToContents()
+
+    def generateLeaderboard(self):
         delete_lap_time_btn = QPushButton("Delete Time")
         delete_lap_time_btn.clicked.connect(self.deleteEntry)
+
+        leaderboard_title = QLabel("Leaderboard")
 
         self.leaderboard_model = LeaderboardTableModel(self.competition_db)
         self.leaderboard_model.updateTable()
 
         self.leaderboard_view = QTableView()
         self.leaderboard_view.setModel(self.leaderboard_model)
-        self.setTableViewDefault()
+        self.setTableViewConfiguration()
 
         self.leaderboard_layout = QVBoxLayout()
+        self.leaderboard_layout.addWidget(leaderboard_title)
         self.leaderboard_layout.addWidget(self.leaderboard_view)
         self.leaderboard_layout.addWidget(delete_lap_time_btn)
 
     def deleteEntry(self):
-        selected = self.leaderboard_view.selectedIndexes()
-        if selected:
-            entry_index = selected[0].row()
-            self.leaderboard_model.removeEntry(entry_index)
-            self.setTableViewDefault()
+        selected_cells = self.leaderboard_view.selectedIndexes()
+
+        for i, cell in enumerate(selected_cells):
+            if i % 2 == 0:
+                # selectedIndexes gives all selected cells. Every row has 2 cells. If user clicks on a row then both cells are automaticly selected. Program only needs to use 1 cell, so "discard" every other cell
+
+                entry_row_index = cell.row()
+                self.leaderboard_model.removeEntry(entry_row_index)
+
+        self.leaderboard_model.updateTable()
+        self.setTableViewConfiguration()
 
 
 class LeaderboardTableModel(QAbstractTableModel):
@@ -441,7 +410,6 @@ class LeaderboardTableModel(QAbstractTableModel):
     def removeEntry(self, entry_index):
         entry_id = self.table[entry_index][2]  # ID is in the 3rd col
         self.competition_db.deleteRobotLapTime(entry_id)
-        self.updateTable()
 
     def rowCount(self, index):
         # Num of rows in this 2D array
@@ -470,7 +438,7 @@ class LeaderboardTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
                 if section == 0:
-                    return "Robot"
+                    return "Name"
                 elif section == 1:
                     return "Lap Time"
 
@@ -539,9 +507,13 @@ class TrackingUI(QWidget):
         robot_name = self.robot_name.text() or "Robot"
         lap_times = self.lap_times_list_model.lap_times
 
-        self.competition_db.addRobotLapTimes(self.competition_id, robot_name, lap_times)
-
-        self.openCompetitionUI(self.competition_name, self.competition_id)
+        if len(lap_times):
+            self.competition_db.addRobotLapTimes(
+                self.competition_id, robot_name, lap_times
+            )
+            self.openCompetitionUI(self.competition_name, self.competition_id)
+        else:
+            QMessageBox.critical(self, "Error", "No lap times to save!")
 
     def generateLapTimesList(self):
         list_title = QLabel("Lap times")
