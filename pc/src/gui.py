@@ -15,8 +15,11 @@ from PySide6.QtWidgets import (
     QTableView,
     QApplication,
     QHeaderView,
+    QStyleOption,
+    QStyle,
 )
 from PySide6.QtCore import Qt, QAbstractListModel, QAbstractTableModel
+from PySide6.QtGui import QPainter, QCursor
 
 from database import CompetitionDB
 from tracking import Tracking
@@ -41,6 +44,9 @@ def clearLayout(layout):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        with open("style.css", "r") as f:
+            self.setStyleSheet(f.read())
 
         self.setFixedSize(APP_WIDTH, APP_HEIGHT)
         self.setWindowTitle("Tempo")
@@ -68,25 +74,78 @@ class MainWindow(QMainWindow):
         self.cur_page.setCurrentWidget(self.main_menu)
 
 
-class MainMenu(QWidget):
+class MyWidget(QWidget):
+    def __init__(self, id_tag=None, parent=None):
+        super().__init__(parent)
+
+        # Set object name to easily identify widgets in stylesheet
+        # self.__class__.__name__ gives Python class name
+        class_name = self.__class__.__name__
+        self.setObjectName(id_tag or class_name)
+
+        self.setProperty("class", "page")
+
+    def paintEvent(self, event):
+        # This is a method override to make sure that stylesheet identifies object by its name.
+        # For some reason if widget is a custom (subclassed from QWidget) then stylesheet doesn't work correctly.
+        opt = QStyleOption()
+        opt.initFrom(self)
+
+        painter = QPainter(self)
+
+        self.style().drawPrimitive(QStyle.PE_Widget, opt, painter, self)
+
+
+class Page(MyWidget):
+    def __init__(self, id_tag=None, parent=None):
+        super().__init__(id_tag, parent)
+
+        self.setProperty("class", "page")
+
+
+class Button(QPushButton):
+    def __init__(self, text, id_tag="", class_tag="", parent=None):
+        super().__init__(text, parent)
+
+        # Set object name to easily identify widgets in stylesheet
+        # self.__class__.__name__ gives Python class name
+        class_name = self.__class__.__name__
+        self.setObjectName(id_tag or class_name)
+
+        # To access multiple instances of this object in stylesheet
+        self.setProperty("class", "button")
+        self.setProperty("class2", class_tag)
+
+        # If user hovers over a button, then show correct cursor type
+        self.setCursor(QCursor(Qt.PointingHandCursor))
+
+
+class MainMenu(Page):
     def __init__(self, openCompetionsManager):
         super().__init__()
 
         # Header
         title = QLabel("Tempo")
+        title.setObjectName("AppTitle")
+
         subtitle = QLabel("Lap time tracker")
+        title.setObjectName("AppSubtitle")
 
         header = QVBoxLayout()
         header.addWidget(title)
         header.addWidget(subtitle)
 
         # Menu options
-        competition_btn = QPushButton("Competitions")
+        competition_btn = Button("Competitions", "OpenCompetitions")
         competition_btn.clicked.connect(openCompetionsManager)
+
+        exit_btn = Button("Exit", "ExitApp", class_tag="back_btn")
+        exit_btn.clicked.connect(QApplication.instance().quit)
 
         menu_options = QVBoxLayout()
         menu_options.setAlignment(Qt.AlignLeft)
         menu_options.addWidget(competition_btn)
+        menu_options.addWidget(exit_btn)
 
         # Main layout
         main_layout = QVBoxLayout()
@@ -135,7 +194,7 @@ class CompetitionsManager(QStackedWidget):
         self.tracking_UI.openTracking(self.competition_UI.competitionInfo())
 
 
-class CompetitionsList(QWidget):
+class CompetitionsList(Page):
     def __init__(self, competition_db, openMainMenu, openCompetitionUI):
         super().__init__()
 
@@ -290,7 +349,7 @@ class InputDialog(QDialog):
         return True
 
 
-class CompetitionUI(QWidget):
+class CompetitionUI(Page):
     def __init__(self, competition_db, showCompetitionsList, openTrackingUI):
         super().__init__()
 
@@ -446,7 +505,7 @@ class LeaderboardTableModel(QAbstractTableModel):
                 return ""  # None
 
 
-class TrackingUI(QWidget):
+class TrackingUI(Page):
     def __init__(self, competition_db, openCompetitionUI):
         super().__init__()
 

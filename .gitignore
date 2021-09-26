@@ -1,3 +1,4 @@
 # Editors
 .vscode/
 .idea/
+.mypy_cache
