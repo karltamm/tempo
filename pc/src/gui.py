@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QStyleOption,
     QStyle,
+    QScrollArea,
 )
 from PySide6.QtCore import Qt, QAbstractListModel, QAbstractTableModel
 from PySide6.QtGui import QPainter, QCursor
@@ -25,7 +26,7 @@ from database import CompetitionDB
 from tracking import Tracking
 
 APP_WIDTH = 300
-APP_HEIGHT = 300
+APP_HEIGHT = 600
 
 
 def clearLayout(layout):
@@ -129,7 +130,7 @@ class MainMenu(Page):
         title.setObjectName("AppTitle")
 
         subtitle = QLabel("Lap time tracker")
-        title.setObjectName("AppSubtitle")
+        subtitle.setObjectName("AppSubtitle")
 
         header = QVBoxLayout()
         header.addWidget(title)
@@ -139,7 +140,7 @@ class MainMenu(Page):
         competition_btn = Button("Competitions", "OpenCompetitions")
         competition_btn.clicked.connect(openCompetionsManager)
 
-        exit_btn = Button("Exit", "ExitApp", class_tag="back_btn")
+        exit_btn = Button("Exit", "ExitApp", class_tag="red_btn")
         exit_btn.clicked.connect(QApplication.instance().quit)
 
         menu_options = QVBoxLayout()
@@ -202,8 +203,6 @@ class CompetitionsList(Page):
         self.openCompetitionUI = openCompetitionUI
         self.openMainMenu = openMainMenu
 
-        self.competitions_list = None
-
         self.generateUI()
 
     def generateUI(self):
@@ -212,20 +211,47 @@ class CompetitionsList(Page):
         self.generateMainLayout()
 
     def generateHeader(self):
-        back_btn = QPushButton("Back")
+        back_btn = Button("Back", class_tag="red_btn")
         back_btn.clicked.connect(self.openMainMenu)
 
         self.header = QHBoxLayout()
+        self.header.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.header.addWidget(back_btn)
 
     def generateListSection(self):
         title = QLabel("Competitions")
-        add_competition_btn = QPushButton("Add Competition")
+        title.setProperty("class", "page_title")
+
+        button_box = QHBoxLayout()
+        add_competition_btn = Button("Add Competition", id_tag="AddCompetitionBtn")
+        add_competition_btn.setProperty("class2", "green_btn")
         add_competition_btn.clicked.connect(self.openCompetitionCreator)
+        button_box.addWidget(add_competition_btn)
+        button_box.setAlignment(Qt.AlignLeft)
+
+        # Actual list part
+        self.competitions_list = (
+            QVBoxLayout()
+        )  # You put competition list items into this
+        self.competitions_list.setAlignment(Qt.AlignTop)
+
+        self.competition_list_widget = MyWidget(
+            id_tag="CompetitionList"
+        )  # This is needed to use scroll area. "competitions_list" layout is put into this widget
+
+        self.competitions_list_scroll = QScrollArea()
+        self.competitions_list_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.competitions_list_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarAlwaysOff
+        )
+        self.competitions_list_scroll.setWidgetResizable(True)
+        self.competitions_list_scroll.setWidget(self.competition_list_widget)
 
         self.list_section = QVBoxLayout()
+        self.list_section.setAlignment(Qt.AlignTop)
         self.list_section.addWidget(title)
-        self.list_section.addWidget(add_competition_btn)
+        self.list_section.addLayout(button_box)
+        self.list_section.addWidget(self.competitions_list_scroll)
 
     def generateMainLayout(self):
         main_layout = QVBoxLayout()
@@ -241,7 +267,6 @@ class CompetitionsList(Page):
         if data != None:
             # Reset list
             clearLayout(self.competitions_list)
-            self.competitions_list = QVBoxLayout()
 
             # Populate list
             for competition in data:
@@ -253,9 +278,18 @@ class CompetitionsList(Page):
                         self.deleteCompetition,
                     )
                 )
+            # for i in range(300):
+            #     self.competitions_list.addWidget(
+            #         CompetitionListItem(
+            #             "Test " + str(i),
+            #             1,
+            #             self.openCompetitionUI,
+            #             self.deleteCompetition,
+            #         )
+            #     )
 
             # Add list to view
-            self.list_section.addLayout(self.competitions_list)
+            self.competition_list_widget.setLayout(self.competitions_list)
         else:
             QMessageBox.critical(
                 self, "Database Error", "List of competitions could not be retrived!"
@@ -299,10 +333,16 @@ class CompetitionListItem(QWidget):
         delete_btn = QPushButton("Delete")
         delete_btn.clicked.connect(lambda: deleteCompetition(competition_ID))
 
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(open_btn)
+        button_layout.addWidget(delete_btn)
+        button_layout.setAlignment(Qt.AlignRight)
+
         layout = QHBoxLayout()
         layout.addWidget(name)
-        layout.addWidget(open_btn)
-        layout.addWidget(delete_btn)
+        layout.addLayout(button_layout)
+        # layout.setAlignment(Qt.AlignCenter)
+
         self.setLayout(layout)
 
 
@@ -312,21 +352,29 @@ class InputDialog(QDialog):
 
         self.callback = callback or (lambda x: None)
 
+        self.setWindowTitle(input_label)
+
         input_label = QLabel(input_label)
         self.input = QLineEdit()
         self.input.textChanged.connect(self.validateInput)
         self.input_feedback = QLabel()
 
-        buttons = QDialogButtonBox.Save | QDialogButtonBox.Cancel
-        btn_box = QDialogButtonBox(buttons)
-        btn_box.accepted.connect(self.save)
-        btn_box.rejected.connect(self.reject)
+        save_btn = Button("Save", class_tag="green_btn")
+        save_btn.clicked.connect(self.save)
+
+        cancel_btn = Button("Cancel", class_tag="red_btn")
+        cancel_btn.clicked.connect(self.reject)
+
+        buttons = QHBoxLayout()
+        buttons.addWidget(save_btn)
+        buttons.addWidget(cancel_btn)
+        buttons.setAlignment(Qt.AlignRight | Qt.AlignBottom)
 
         layout = QVBoxLayout()
         layout.addWidget(input_label)
         layout.addWidget(self.input)
         layout.addWidget(self.input_feedback)
-        layout.addWidget(btn_box)
+        layout.addLayout(buttons)
         self.setLayout(layout)
 
         self.exec()
@@ -403,7 +451,7 @@ class CompetitionUI(Page):
         main_layout.addLayout(self.leaderboard_layout)
 
     def competitionInfo(self):
-        # If competition page is opened, this info is nessercy to work with database
+        # If competition page is opened, this info is necessary to work with database
         return self.competition_name, self.competition_id
 
     def setTableViewConfiguration(self):
