@@ -1,0 +1,57 @@
+/* Basic */
+QLabel {
+  color: #fff;
+  font-size: 20px;
+}
+
+[class="page"],
+QDialog,
+#CompetitionList {
+  background: #232323;
+}
+
+QPushButton {
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  background-color: #3437ff;
+}
+
+[class2="green_btn"] {
+  background-color: #16a735;
+}
+
+[class2="red_btn"] {
+  background-color: #e9420f;
+}
+
+/* Main menu */
+#AppTitle {
+  font-size: 30px;
+}
+
+#AppSubtitle {
+  font-size: 25px;
+}
+
+#OpenCompetitions {
+  margin-top: 20px;
+}
+
+#ExitApp {
+  margin-top: 5px;
+}
+
+/* Competitions page */
+[class="page_title"] {
+  font-size: 30px;
+}
+
+#AddCompetitionBtn {
+  margin-top: 20px;
+}
+
+QScrollArea {
+  border: 0;
+}
