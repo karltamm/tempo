@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
     QStyleOption,
     QStyle,
     QScrollArea,
+    QStyleFactory,
+    QAbstractButton,
 )
 from PySide6.QtCore import Qt, QAbstractListModel, QAbstractTableModel
 from PySide6.QtGui import QPainter, QCursor
@@ -25,8 +27,10 @@ from PySide6.QtGui import QPainter, QCursor
 from database import CompetitionDB
 from tracking import Tracking
 
-APP_WIDTH = 300
+APP_WIDTH = 500
 APP_HEIGHT = 600
+
+ENTRY_ID_COL_I = 3
 
 
 def clearLayout(layout):
@@ -51,6 +55,7 @@ class MainWindow(QMainWindow):
 
         self.setFixedSize(APP_WIDTH, APP_HEIGHT)
         self.setWindowTitle("Tempo")
+        self.setContentsMargins(20, 30, 20, 30)
 
         self.createMainPages()
         self.createPageController()
@@ -119,6 +124,18 @@ class Button(QPushButton):
 
         # If user hovers over a button, then show correct cursor type
         self.setCursor(QCursor(Qt.PointingHandCursor))
+
+
+class PageTitle(QLabel):
+    def __init__(self, text, id_tag="", class_tag="", parent=None):
+        super().__init__(text, parent)
+
+        # Set object name to easily identify widgets in stylesheet
+        # self.__class__.__name__ gives Python class name
+        class_name = self.__class__.__name__
+        self.setObjectName(id_tag or class_name)
+
+        self.setContentsMargins(0, 10, 0, 20)
 
 
 class MainMenu(Page):
@@ -211,21 +228,27 @@ class CompetitionsList(Page):
         self.generateMainLayout()
 
     def generateHeader(self):
-        back_btn = Button("Back", class_tag="red_btn")
+        back_btn = Button("Back", id_tag="BackBtn", class_tag="red_btn")
         back_btn.clicked.connect(self.openMainMenu)
 
-        self.header = QHBoxLayout()
+        button_layout = QVBoxLayout()
+        button_layout.setAlignment(Qt.AlignLeft)
+        button_layout.addWidget(back_btn)
+
+        page_title = PageTitle("Competitions")
+
+        self.header = QVBoxLayout()
         self.header.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.header.addWidget(back_btn)
+        self.header.addLayout(button_layout)
+        self.header.addWidget(page_title)
 
     def generateListSection(self):
-        title = QLabel("Competitions")
-        title.setProperty("class", "page_title")
 
-        button_box = QHBoxLayout()
         add_competition_btn = Button("Add Competition", id_tag="AddCompetitionBtn")
         add_competition_btn.setProperty("class2", "green_btn")
         add_competition_btn.clicked.connect(self.openCompetitionCreator)
+
+        button_box = QHBoxLayout()
         button_box.addWidget(add_competition_btn)
         button_box.setAlignment(Qt.AlignLeft)
 
@@ -249,7 +272,6 @@ class CompetitionsList(Page):
 
         self.list_section = QVBoxLayout()
         self.list_section.setAlignment(Qt.AlignTop)
-        self.list_section.addWidget(title)
         self.list_section.addLayout(button_box)
         self.list_section.addWidget(self.competitions_list_scroll)
 
@@ -326,11 +348,15 @@ class CompetitionListItem(QWidget):
         super().__init__()
 
         name = QLabel(competition_name)
-        open_btn = QPushButton("Open")
+        name_layout = QHBoxLayout()
+        name_layout.addWidget(name)
+        name_layout.setAlignment(Qt.AlignLeft)
+
+        open_btn = Button("Open")
         open_btn.clicked.connect(
             lambda: openCompetitionUI(competition_name, competition_ID)
         )
-        delete_btn = QPushButton("Delete")
+        delete_btn = Button("Delete", class_tag="red_btn")
         delete_btn.clicked.connect(lambda: deleteCompetition(competition_ID))
 
         button_layout = QHBoxLayout()
@@ -339,9 +365,8 @@ class CompetitionListItem(QWidget):
         button_layout.setAlignment(Qt.AlignRight)
 
         layout = QHBoxLayout()
-        layout.addWidget(name)
+        layout.addLayout(name_layout)
         layout.addLayout(button_layout)
-        # layout.setAlignment(Qt.AlignCenter)
 
         self.setLayout(layout)
 
@@ -355,9 +380,13 @@ class InputDialog(QDialog):
         self.setWindowTitle(input_label)
 
         input_label = QLabel(input_label)
+        input_label.setProperty("class", "input_label")
+
         self.input = QLineEdit()
         self.input.textChanged.connect(self.validateInput)
+
         self.input_feedback = QLabel()
+        self.input_feedback.setProperty("class", "input_feedback")
 
         save_btn = Button("Save", class_tag="green_btn")
         save_btn.clicked.connect(self.save)
@@ -394,6 +423,8 @@ class InputDialog(QDialog):
             self.input_feedback.setText("Max 20 chars")
             return False
 
+        # Everything okay
+        self.input_feedback.setText("")  # Remove previously set error
         return True
 
 
@@ -405,7 +436,7 @@ class CompetitionUI(Page):
         self.showCompetitionsList = showCompetitionsList
         self.openTrackingUI = openTrackingUI
 
-        self.competition_name = None
+        self.competition_name = ""
         self.competition_id = None
 
         self.prepareUI()
@@ -426,20 +457,29 @@ class CompetitionUI(Page):
         self.generateLayout()
 
     def generateHeader(self):
-        back_btn = QPushButton("Back")
+        back_btn = Button("Back", id_tag="BackBtn", class_tag="red_btn")
         back_btn.clicked.connect(self.showCompetitionsList)
-        self.page_title = QLabel(self.competition_name)
+
+        back_btn_layout = QVBoxLayout()
+        back_btn_layout.addWidget(back_btn)
+        back_btn_layout.setAlignment(Qt.AlignLeft)
+
+        self.page_title = PageTitle(self.competition_name)
 
         self.header = QVBoxLayout()
-        self.header.addWidget(back_btn)
+        self.header.addLayout(back_btn_layout)
         self.header.addWidget(self.page_title)
+        self.header.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
     def generateTrackingButton(self):
-        track_robot_btn = QPushButton("Track Robot")
+        track_robot_btn = Button(
+            "Track Robot", id_tag="TrackRobotBtn", class_tag="green_btn"
+        )
         track_robot_btn.clicked.connect(self.openTrackingUI)
 
         self.control_layout = QHBoxLayout()
         self.control_layout.addWidget(track_robot_btn)
+        self.control_layout.setAlignment(Qt.AlignLeft)
 
     def generateLayout(self):
         main_layout = QVBoxLayout()
@@ -457,26 +497,36 @@ class CompetitionUI(Page):
     def setTableViewConfiguration(self):
         # After competition page is (re)opened, make sure that table is displayed nicely
 
-        self.leaderboard_view.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.leaderboard_view.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Fixed
+        )  # Cant resize columns
 
         self.leaderboard_view.clearSelection()
         self.leaderboard_view.setSelectionBehavior(QTableView.SelectRows)
         # self.leaderboard_view.setSelectionMode(QTableView.SingleSelection)
 
-        self.leaderboard_view.setColumnHidden(2, True)  # Hide entry ID
+        self.leaderboard_view.setColumnHidden(ENTRY_ID_COL_I, True)  # Hide entry ID
 
         self.leaderboard_view.resizeColumnsToContents()
 
     def generateLeaderboard(self):
-        delete_lap_time_btn = QPushButton("Delete Time")
+        delete_lap_time_btn = Button(
+            "Delete Time", id_tag="DeleteEntryBtn", class_tag="red_btn"
+        )
         delete_lap_time_btn.clicked.connect(self.deleteEntry)
 
         leaderboard_title = QLabel("Leaderboard")
+        leaderboard_title.setObjectName("LeaderboardSectionTitle")
 
         self.leaderboard_model = LeaderboardTableModel(self.competition_db)
         self.leaderboard_model.updateTable()
 
         self.leaderboard_view = QTableView()
+        self.leaderboard_view.setCornerButtonEnabled(False)
+        self.leaderboard_view.setShowGrid(False)
+        self.leaderboard_view.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
+
+        self.leaderboard_view.setObjectName("LeaderboardView")
         self.leaderboard_view.setModel(self.leaderboard_model)
         self.setTableViewConfiguration()
 
@@ -490,7 +540,7 @@ class CompetitionUI(Page):
 
         for i, cell in enumerate(selected_cells):
             if i % 2 == 0:
-                # selectedIndexes gives all selected cells. Every row has 2 cells. If user clicks on a row then both cells are automaticly selected. Program only needs to use 1 cell, so "discard" every other cell
+                # selectedIndexes gives all selected cells. Every row has 2 cells. If user clicks on a row then both cells are automatically selected. Program only needs to use 1 cell, so "discard" every other cell
 
                 entry_row_index = cell.row()
                 self.leaderboard_model.removeEntry(entry_row_index)
@@ -515,7 +565,7 @@ class LeaderboardTableModel(QAbstractTableModel):
             return self.table[index.row()][index.column()]
 
     def removeEntry(self, entry_index):
-        entry_id = self.table[entry_index][2]  # ID is in the 3rd col
+        entry_id = self.table[entry_index][ENTRY_ID_COL_I]
         self.competition_db.deleteRobotLapTime(entry_id)
 
     def rowCount(self, index):
@@ -531,9 +581,14 @@ class LeaderboardTableModel(QAbstractTableModel):
         data = self.competition_db.getCompetitionLeaderboard(self.competition_id)
 
         if data:
-            for entry in data:
+            for placement, entry in enumerate(data):
                 self.table.append(
-                    [entry["robot_name"], entry["lap_time"], entry["entry_id"]]
+                    [
+                        placement + 1,  # + 1 because counting starts from 0
+                        entry["robot_name"],
+                        entry["lap_time"],
+                        entry["entry_id"],
+                    ]
                 )  # Add new row thats has column about entry data
         else:
             self.table.append([])  # Add at least one row with column, otherwise error
@@ -545,8 +600,10 @@ class LeaderboardTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
                 if section == 0:
+                    return "#"
+                if section == 1:
                     return "Name"
-                elif section == 1:
+                if section == 2:
                     return "Lap Time"
 
             if orientation == Qt.Vertical:
@@ -564,30 +621,45 @@ class TrackingUI(Page):
         self.competition_id = None
         self.lap_times_list_model = LapTimesListModel()
 
-        self.setupLayout()
+        self.robot_default_name = "None"
+
+        self.generateLayout()
 
         self.number = 0
 
     def generateHeader(self):
-        page_title = QLabel("Tracking")
+        page_title = PageTitle("Tracking")
 
-        test_btn = QPushButton("Test")
+        test_btn = QPushButton("Add Laps")
         test_btn.clicked.connect(self.addDummyData)
 
-        self.header = QHBoxLayout()
+        back_btn = Button("Back", class_tag="red_btn")
+        back_btn.clicked.connect(
+            lambda: self.openCompetitionUI(self.competition_name, self.competition_id)
+        )
+
+        back_btn_layout = QVBoxLayout()
+        back_btn_layout.setAlignment(Qt.AlignLeft)
+        back_btn_layout.addWidget(back_btn)
+
+        self.header = QVBoxLayout()
+        self.header.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.header.addLayout(back_btn_layout)
         self.header.addWidget(page_title)
         self.header.addWidget(test_btn)
 
     def generateRobotNameSection(self):
         robot_name_label = QLabel("Robot name")
+        robot_name_label.setObjectName("RobotNameSectionTitle")
 
-        self.robot_name = QLabel("Robot")
-        rename_btn = QPushButton("Rename")
+        self.robot_name = QLabel(self.robot_default_name)
+        rename_btn = Button("Rename", id_tag="RobotRenameBtn")
         rename_btn.clicked.connect(self.openRenameDialog)
 
         rename_layout = QHBoxLayout()
         rename_layout.addWidget(self.robot_name)
         rename_layout.addWidget(rename_btn)
+        rename_layout.setAlignment(Qt.AlignLeft)
 
         self.robot_name_layout = QVBoxLayout()
         self.robot_name_layout.addWidget(robot_name_label)
@@ -611,7 +683,7 @@ class TrackingUI(Page):
             self.lap_times_list_view.clearSelection()
 
     def saveData(self):
-        robot_name = self.robot_name.text() or "Robot"
+        robot_name = self.robot_name.text()
         lap_times = self.lap_times_list_model.lap_times
 
         if len(lap_times):
@@ -624,50 +696,47 @@ class TrackingUI(Page):
 
     def generateLapTimesList(self):
         list_title = QLabel("Lap times")
+        list_title.setObjectName("LapTimesListTitle")
+        list_title.setContentsMargins(0, 20, 0, 0)
 
         self.lap_times_list_view = QListView()
         self.lap_times_list_view.setModel(self.lap_times_list_model)
 
-        delete_time_btn = QPushButton("Delete Time")
+        delete_time_btn = Button(
+            "Delete Time", id_tag="DeleteLapTimeBtn", class_tag="red_btn"
+        )
         delete_time_btn.clicked.connect(self.deleteSelectedTimes)
+
+        save_btn = Button("Save", class_tag="green_btn", id_tag="SaveLapTimesBtn")
+        save_btn.clicked.connect(self.saveData)
+
+        save_btn_layout = QHBoxLayout()
+        save_btn_layout.setAlignment(Qt.AlignRight)
+        save_btn_layout.addWidget(save_btn)
 
         self.lap_times_list = QVBoxLayout()
         self.lap_times_list.addWidget(list_title)
         self.lap_times_list.addWidget(self.lap_times_list_view)
         self.lap_times_list.addWidget(delete_time_btn)
+        self.lap_times_list.addLayout(save_btn_layout)
 
-    def generateEndTrackingUI(self):
-        save_btn = QPushButton("Save")
-        save_btn.clicked.connect(self.saveData)
-
-        cancel_btn = QPushButton("Discard")
-        cancel_btn.clicked.connect(
-            lambda: self.openCompetitionUI(self.competition_name, self.competition_id)
-        )
-
-        self.end_tracking_layout = QHBoxLayout()
-        self.end_tracking_layout.addWidget(save_btn)
-        self.end_tracking_layout.addWidget(cancel_btn)
-
-    def setupLayout(self):
+    def generateLayout(self):
         self.generateHeader()
         self.generateRobotNameSection()
         self.generateLapTimesList()
-        self.generateEndTrackingUI()
 
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)
         main_layout.addLayout(self.header)
         main_layout.addLayout(self.robot_name_layout)
         main_layout.addLayout(self.lap_times_list)
-        main_layout.addLayout(self.end_tracking_layout)
 
     def openTracking(self, data):
         self.competition_name, self.competition_id = data
 
         # Removes previously held data
         self.lap_times_list_model.lap_times = []  # Clear
-        self.robot_name.setText("Robot")
+        self.robot_name.setText(self.robot_default_name)
 
 
 class LapTimesListModel(QAbstractListModel):
@@ -702,5 +771,6 @@ os.chdir(file_dir_path)
 
 # Test
 app = QApplication()
+# app.setStyle(QStyleFactory.create("fusion"))
 window = MainWindow()
 app.exec()

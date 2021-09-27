@@ -1,16 +1,28 @@
 /* Basic */
 QLabel {
   color: #fff;
-  font-size: 20px;
+  font-size: 18px;
 }
 
-[class="page"],
 QDialog,
-#CompetitionList {
-  background: #232323;
+QMainWindow,
+QScrollArea {
+  background: #161616;
 }
 
-QPushButton {
+#RobotNameSectionTitle,
+#LapTimesListTitle,
+#LeaderboardSectionTitle,
+#AppSubtitle {
+  font-size: 25px;
+}
+
+#PageTitle {
+  font-size: 40px;
+}
+
+/* Buttons */
+[class="button"] {
   padding: 10px;
   border: 0;
   border-radius: 10px;
@@ -18,21 +30,31 @@ QPushButton {
   background-color: #3437ff;
 }
 
+[class="button"]:hover {
+  background-color: #2b00a1;
+}
+
 [class2="green_btn"] {
-  background-color: #16a735;
+  background-color: #21c545;
+}
+
+[class2="green_btn"]:hover {
+  background-color: #11942e;
 }
 
 [class2="red_btn"] {
   background-color: #e9420f;
 }
 
-/* Main menu */
-#AppTitle {
-  font-size: 30px;
+[class2="red_btn"]:hover {
+  background-color: #b6330b;
 }
 
-#AppSubtitle {
-  font-size: 25px;
+/* Page */
+
+/* Main menu */
+#AppTitle {
+  font-size: 60px;
 }
 
 #OpenCompetitions {
@@ -44,14 +66,90 @@ QPushButton {
 }
 
 /* Competitions page */
-[class="page_title"] {
-  font-size: 30px;
-}
-
 #AddCompetitionBtn {
-  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 QScrollArea {
   border: 0;
+}
+
+#CompetitionList {
+  background: #1f1f1f;
+  border-radius: 10px;
+}
+
+/* Input dialog */
+QLineEdit {
+  padding: 10px;
+  border: 1px solid #1b1b1b;
+  background: #292929;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+}
+
+[class="input_label"] {
+  margin-bottom: 10px;
+}
+
+[class="input_feedback"] {
+  margin-top: 10px;
+  margin-bottom: 20px;
+  color: #ffc413;
+  font-size: 16px;
+}
+
+/* Competition UI */
+#TrackRobotBtn {
+  margin-bottom: 20px;
+}
+
+#LeaderboardView {
+  border: 0;
+  padding: 10px;
+}
+
+#LeaderboardView,
+#LeaderboardView QHeaderView,
+#LeaderboardView QHeaderView::section,
+#LeaderboardView QTableCornerButton::section {
+  background: #1f1f1f;
+  color: #fff;
+  border-radius: 10px;
+}
+
+#LeaderboardView QHeaderView::section:horizontal {
+  padding-right: 20px;
+}
+
+#LeaderboardView QHeaderView::section:vertical {
+  width: 0;
+}
+
+#LeaderboardView QHeaderView::section {
+  font-weight: bold;
+  border: 0;
+  font-size: 18px;
+  padding: 0;
+  margin: 0;
+}
+
+#DeleteEntryBtn {
+  margin-top: 10px;
+}
+
+/* Tracking UI */
+
+#RobotRenameBtn {
+  margin-left: 10px;
+}
+
+#DeleteLapTimeBtn {
+  margin-top: 10px;
+}
+
+#SaveLapTimesBtn {
+  margin-top: 20px;
+  width: 100px;
 }
