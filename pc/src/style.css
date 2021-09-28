@@ -1,5 +1,7 @@
 /* Basic */
-QLabel {
+QLabel,
+QTableView,
+QListView {
   color: #fff;
   font-size: 18px;
 }
@@ -10,15 +12,13 @@ QScrollArea {
   background: #161616;
 }
 
-#RobotNameSectionTitle,
-#LapTimesListTitle,
-#LeaderboardSectionTitle,
-#AppSubtitle {
-  font-size: 25px;
-}
-
 #PageTitle {
   font-size: 40px;
+}
+
+[class="section_title"],
+#AppSubtitle {
+  font-size: 30px;
 }
 
 /* Buttons */
@@ -50,8 +50,6 @@ QScrollArea {
   background-color: #b6330b;
 }
 
-/* Page */
-
 /* Main menu */
 #AppTitle {
   font-size: 60px;
@@ -82,7 +80,7 @@ QScrollArea {
 /* Input dialog */
 QLineEdit {
   padding: 10px;
-  border: 1px solid #1b1b1b;
+  border: 1px solid #111111;
   background: #292929;
   border-radius: 10px;
   color: #fff;
@@ -101,9 +99,9 @@ QLineEdit {
 }
 
 /* Competition UI */
-#TrackRobotBtn {
+/* #TrackRobotBtn {
   margin-bottom: 20px;
-}
+} */
 
 #LeaderboardView {
   border: 0;
@@ -116,11 +114,16 @@ QLineEdit {
 #LeaderboardView QTableCornerButton::section {
   background: #1f1f1f;
   color: #fff;
+}
+#LeaderboardView {
   border-radius: 10px;
 }
 
 #LeaderboardView QHeaderView::section:horizontal {
   padding-right: 20px;
+  /* margin-bottom: 10px; */
+  padding-bottom: 10px;
+  /* border-bottom: 1px solid #fff; */
 }
 
 #LeaderboardView QHeaderView::section:vertical {
@@ -130,7 +133,7 @@ QLineEdit {
 #LeaderboardView QHeaderView::section {
   font-weight: bold;
   border: 0;
-  font-size: 18px;
+  font-size: 20px;
   padding: 0;
   margin: 0;
 }
@@ -152,4 +155,15 @@ QLineEdit {
 #SaveLapTimesBtn {
   margin-top: 20px;
   width: 100px;
+}
+
+#TrackingLapTimesView {
+  background: #1f1f1f;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+#RobotName {
+  font-style: italic;
 }

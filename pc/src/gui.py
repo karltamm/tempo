@@ -23,12 +23,13 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QAbstractListModel, QAbstractTableModel
 from PySide6.QtGui import QPainter, QCursor
+import random
 
 from database import CompetitionDB
 from tracking import Tracking
 
 APP_WIDTH = 500
-APP_HEIGHT = 600
+APP_HEIGHT = 700
 
 ENTRY_ID_COL_I = 3
 
@@ -102,6 +103,17 @@ class MyWidget(QWidget):
         self.style().drawPrimitive(QStyle.PE_Widget, opt, painter, self)
 
 
+class SectionTitle(QLabel):
+    def __init__(self, text, id_tag="", class_tag="", parent=None):
+        super().__init__(text, parent)
+
+        self.setObjectName(id_tag)
+        self.setProperty("class", "section_title")
+        self.setProperty("class2", class_tag)
+
+        self.setContentsMargins(0, 20, 0, 5)
+
+
 class Page(MyWidget):
     def __init__(self, id_tag=None, parent=None):
         super().__init__(id_tag, parent)
@@ -135,7 +147,7 @@ class PageTitle(QLabel):
         class_name = self.__class__.__name__
         self.setObjectName(id_tag or class_name)
 
-        self.setContentsMargins(0, 10, 0, 20)
+        self.setContentsMargins(0, 20, 0, 10)
 
 
 class MainMenu(Page):
@@ -154,6 +166,7 @@ class MainMenu(Page):
         header.addWidget(subtitle)
 
         # Menu options
+
         competition_btn = Button("Competitions", "OpenCompetitions")
         competition_btn.clicked.connect(openCompetionsManager)
 
@@ -161,7 +174,7 @@ class MainMenu(Page):
         exit_btn.clicked.connect(QApplication.instance().quit)
 
         menu_options = QVBoxLayout()
-        menu_options.setAlignment(Qt.AlignLeft)
+        menu_options.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         menu_options.addWidget(competition_btn)
         menu_options.addWidget(exit_btn)
 
@@ -515,8 +528,7 @@ class CompetitionUI(Page):
         )
         delete_lap_time_btn.clicked.connect(self.deleteEntry)
 
-        leaderboard_title = QLabel("Leaderboard")
-        leaderboard_title.setObjectName("LeaderboardSectionTitle")
+        leaderboard_title = SectionTitle("Leaderboard")
 
         self.leaderboard_model = LeaderboardTableModel(self.competition_db)
         self.leaderboard_model.updateTable()
@@ -586,7 +598,7 @@ class LeaderboardTableModel(QAbstractTableModel):
                     [
                         placement + 1,  # + 1 because counting starts from 0
                         entry["robot_name"],
-                        entry["lap_time"],
+                        formatTime(entry["lap_time"]),
                         entry["entry_id"],
                     ]
                 )  # Add new row thats has column about entry data
@@ -649,10 +661,10 @@ class TrackingUI(Page):
         self.header.addWidget(test_btn)
 
     def generateRobotNameSection(self):
-        robot_name_label = QLabel("Robot name")
-        robot_name_label.setObjectName("RobotNameSectionTitle")
+        robot_name_label = SectionTitle("Robot Name")
 
         self.robot_name = QLabel(self.robot_default_name)
+        self.robot_name.setObjectName("RobotName")
         rename_btn = Button("Rename", id_tag="RobotRenameBtn")
         rename_btn.clicked.connect(self.openRenameDialog)
 
@@ -673,7 +685,7 @@ class TrackingUI(Page):
 
     def addDummyData(self):
 
-        self.lap_times_list_model.addTime(self.number)
+        self.lap_times_list_model.addTime(random.randrange(30000, 300000))
         self.number += 1
 
     def deleteSelectedTimes(self):
@@ -695,11 +707,10 @@ class TrackingUI(Page):
             QMessageBox.critical(self, "Error", "No lap times to save!")
 
     def generateLapTimesList(self):
-        list_title = QLabel("Lap times")
-        list_title.setObjectName("LapTimesListTitle")
-        list_title.setContentsMargins(0, 20, 0, 0)
+        list_title = SectionTitle("Lap Times")
 
         self.lap_times_list_view = QListView()
+        self.lap_times_list_view.setObjectName("TrackingLapTimesView")
         self.lap_times_list_view.setModel(self.lap_times_list_model)
 
         delete_time_btn = Button(
@@ -739,6 +750,36 @@ class TrackingUI(Page):
         self.robot_name.setText(self.robot_default_name)
 
 
+import math
+
+SECOND_IN_MS = 1000
+MINUTE_IN_MS = 60 * SECOND_IN_MS
+
+
+def formatTime(time_ms):
+    time_ms = int(time_ms)  # Make sure that its actually number
+
+    minutes = math.floor(time_ms / MINUTE_IN_MS)  # How many full minutes?
+    seconds = math.floor(
+        (time_ms % MINUTE_IN_MS) / SECOND_IN_MS
+    )  # Remainder of full minute
+    # milliseconds = math.floor(((time_ms % MINUTE_IN_MS) % SECOND_IN_MS))
+
+    minutes_str = ""
+    if minutes < 10:
+        minutes_str = "0" + str(minutes) + ":"
+    else:
+        minutes_str = str(minutes) + ":"
+
+    seconds_str = ""
+    if seconds < 10:
+        seconds_str = "0" + str(seconds)
+    else:
+        seconds_str = str(seconds)
+
+    return minutes_str + seconds_str
+
+
 class LapTimesListModel(QAbstractListModel):
     def __init__(self):
         super().__init__()
@@ -747,7 +788,7 @@ class LapTimesListModel(QAbstractListModel):
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
-            return self.lap_times[index.row()]
+            return formatTime(self.lap_times[index.row()])
 
     def rowCount(self, index):
         return len(self.lap_times)
@@ -771,6 +812,6 @@ os.chdir(file_dir_path)
 
 # Test
 app = QApplication()
-# app.setStyle(QStyleFactory.create("fusion"))
+app.setStyle(QStyleFactory.create("fusion"))
 window = MainWindow()
 app.exec()
