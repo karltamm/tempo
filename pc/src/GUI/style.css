@@ -4,6 +4,7 @@ QTableView,
 QListView {
   color: #fff;
   font-size: 18px;
+  font-family: "Roboto Light";
 }
 
 QDialog,
@@ -13,12 +14,13 @@ QScrollArea {
 }
 
 #PageTitle {
-  font-size: 40px;
+  font-size: 48px;
+  font-family: "Roboto Slab Black";
 }
 
-[class="section_title"],
-#AppSubtitle {
-  font-size: 30px;
+[class="section_title"] {
+  font-size: 28px;
+  font-family: "Roboto Slab Medium";
 }
 
 /* Buttons */
@@ -28,6 +30,9 @@ QScrollArea {
   border-radius: 10px;
   color: #fff;
   background-color: #3437ff;
+  font-family: "Roboto Light";
+  font-weight: 100;
+  font-size: 16px;
 }
 
 [class="button"]:hover {
@@ -52,7 +57,13 @@ QScrollArea {
 
 /* Main menu */
 #AppTitle {
-  font-size: 60px;
+  font-size: 72px;
+  font-family: "Roboto Slab Black";
+}
+
+#AppSubtitle {
+  font-size: 36px;
+  font-family: "Roboto Bold";
 }
 
 #OpenCompetitions {
@@ -133,7 +144,7 @@ QLineEdit {
 #LeaderboardView QHeaderView::section {
   font-weight: bold;
   border: 0;
-  font-size: 20px;
+  font-size: 22px;
   padding: 0;
   margin: 0;
 }
