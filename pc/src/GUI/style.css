@@ -1,0 +1,178 @@
+/* Basic */
+QLabel,
+QTableView,
+QListView {
+  color: #fff;
+  font-size: 18px;
+  font-family: "Roboto Light";
+}
+
+QDialog,
+QMainWindow,
+QScrollArea {
+  background: #161616;
+}
+
+#PageTitle {
+  font-size: 48px;
+  font-family: "Roboto Slab Black";
+}
+
+[class="section_title"] {
+  font-size: 28px;
+  font-family: "Roboto Slab Medium";
+}
+
+/* Buttons */
+[class="button"] {
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  background-color: #3437ff;
+  font-family: "Roboto Light";
+  font-weight: 100;
+  font-size: 16px;
+}
+
+[class="button"]:hover {
+  background-color: #2b00a1;
+}
+
+[class2="green_btn"] {
+  background-color: #21c545;
+}
+
+[class2="green_btn"]:hover {
+  background-color: #11942e;
+}
+
+[class2="red_btn"] {
+  background-color: #e9420f;
+}
+
+[class2="red_btn"]:hover {
+  background-color: #b6330b;
+}
+
+/* Main menu */
+#AppTitle {
+  font-size: 72px;
+  font-family: "Roboto Slab Black";
+}
+
+#AppSubtitle {
+  font-size: 36px;
+  font-family: "Roboto Bold";
+}
+
+#OpenCompetitions {
+  margin-top: 20px;
+}
+
+#ExitApp {
+  margin-top: 5px;
+}
+
+/* Competitions page */
+#AddCompetitionBtn {
+  margin-bottom: 20px;
+}
+
+QScrollArea {
+  border: 0;
+}
+
+#CompetitionList {
+  background: #1f1f1f;
+  border-radius: 10px;
+}
+
+/* Input dialog */
+QLineEdit {
+  padding: 10px;
+  border: 1px solid #111111;
+  background: #292929;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+}
+
+[class="input_label"] {
+  margin-bottom: 10px;
+}
+
+[class="input_feedback"] {
+  margin-top: 10px;
+  margin-bottom: 20px;
+  color: #ffc413;
+  font-size: 16px;
+}
+
+/* Competition UI */
+/* #TrackRobotBtn {
+  margin-bottom: 20px;
+} */
+
+#LeaderboardView {
+  border: 0;
+  padding: 10px;
+}
+
+#LeaderboardView,
+#LeaderboardView QHeaderView,
+#LeaderboardView QHeaderView::section,
+#LeaderboardView QTableCornerButton::section {
+  background: #1f1f1f;
+  color: #fff;
+}
+#LeaderboardView {
+  border-radius: 10px;
+}
+
+#LeaderboardView QHeaderView::section {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+#LeaderboardView QHeaderView::section:horizontal {
+  padding-right: 20px;
+  padding-bottom: 10px;
+  font-family: "Roboto Slab Medium";
+  font-size: 22px;
+}
+
+#LeaderboardView QHeaderView::section:vertical {
+  width: 0;
+}
+
+#DeleteEntryBtn {
+  margin-top: 10px;
+}
+
+/* Tracking UI */
+
+#RobotRenameBtn {
+  margin-left: 10px;
+}
+
+#DeleteLapTimeBtn {
+  margin-top: 10px;
+}
+
+#SaveLapTimesBtn {
+  margin-top: 20px;
+  width: 100px;
+}
+
+#TrackingLapTimesView {
+  background: #1f1f1f;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+#RobotName {
+  font-style: italic;
+}
