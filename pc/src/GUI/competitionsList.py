@@ -56,7 +56,7 @@ class CompetitionsList(Page):
 
         self.competitions_list_scroll = QtWidgets.QScrollArea()
         self.competitions_list_scroll.setVerticalScrollBarPolicy(
-            QtCore.Qt.ScrollBarAlwaysOn
+            QtCore.Qt.ScrollBarAsNeeded
         )
         self.competitions_list_scroll.setHorizontalScrollBarPolicy(
             QtCore.Qt.ScrollBarAlwaysOff
@@ -94,15 +94,6 @@ class CompetitionsList(Page):
                         self.deleteCompetition,
                     )
                 )
-            # for i in range(300):
-            #     self.competitions_list.addWidget(
-            #         CompetitionListItem(
-            #             "Test " + str(i),
-            #             1,
-            #             self.openCompetitionUI,
-            #             self.deleteCompetition,
-            #         )
-            #     )
 
             # Add list to view
             self.competition_list_widget.setLayout(self.competitions_list)

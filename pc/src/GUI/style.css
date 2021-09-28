@@ -130,23 +130,21 @@ QLineEdit {
   border-radius: 10px;
 }
 
+#LeaderboardView QHeaderView::section {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
 #LeaderboardView QHeaderView::section:horizontal {
   padding-right: 20px;
-  /* margin-bottom: 10px; */
   padding-bottom: 10px;
-  /* border-bottom: 1px solid #fff; */
+  font-family: "Roboto Slab Medium";
+  font-size: 22px;
 }
 
 #LeaderboardView QHeaderView::section:vertical {
   width: 0;
-}
-
-#LeaderboardView QHeaderView::section {
-  font-weight: bold;
-  border: 0;
-  font-size: 22px;
-  padding: 0;
-  margin: 0;
 }
 
 #DeleteEntryBtn {

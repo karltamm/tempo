@@ -83,9 +83,12 @@ class TrackingUI(Page):
         lap_times = self.lap_times_list_model.lap_times
 
         if len(lap_times):
-            self.competition_db.addRobotLapTimes(
+            if not self.competition_db.addRobotLapTimes(
                 self.competition_id, robot_name, lap_times
-            )
+            ):
+                QtWidgets.QMessageBox.critical(
+                    self, "Database Error", "Lap times couldn't be saved!"
+                )
             self.openCompetitionUI(self.competition_name, self.competition_id)
         else:
             QtWidgets.QMessageBox.critical(self, "Error", "No lap times to save!")

@@ -95,7 +95,7 @@ class CompetitionUI(Page):
 
         leaderboard_title = SectionTitle("Leaderboard")
 
-        self.leaderboard_model = LeaderboardTableModel(self.competition_db)
+        self.leaderboard_model = LeaderboardTableModel(self.competition_db, self)
         self.leaderboard_model.updateTable()
 
         self.leaderboard_view = QtWidgets.QTableView()
@@ -129,11 +129,12 @@ class CompetitionUI(Page):
 
 
 class LeaderboardTableModel(QtCore.QAbstractTableModel):
-    def __init__(self, competition_db):
+    def __init__(self, competition_db, parent):
         super().__init__()
         self.table = []  # 2D array
         self.competition_db = competition_db
         self.competition_id = None
+        self.parent_widget = parent
 
     def initData(self, id):
         self.competition_id = id
@@ -145,7 +146,10 @@ class LeaderboardTableModel(QtCore.QAbstractTableModel):
 
     def removeEntry(self, entry_index):
         entry_id = self.table[entry_index][ENTRY_ID_COL_INDEX]
-        self.competition_db.deleteRobotLapTime(entry_id)
+        if not self.competition_db.deleteRobotLapTime(entry_id):
+            QtWidgets.QMessageBox.critical(
+                self.parent_widget, "Database Error", "Entry couldn't be deleted!"
+            )
 
     def rowCount(self, index):
         # Num of rows in this 2D array
