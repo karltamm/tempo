@@ -2,23 +2,22 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
-#include <string.h>
+
 
 /* Defines ------------------------------------------------------------------ */
-#define button_pin      2
 #define sonic_echo_pin  3
 #define sonic_trig_pin  4
 #define right_led       7
 #define left_led        8
 
 RF24 radio(9, 10);
-const uint64_t addresses[3] = {0xF0F0F0FF11, 0xF0F0F0F022, 0xF0F0F0F033}; //addresses(timer>PC, PC>timer, BOT>ttimer)
-byte pipeNum=0;
-
 
 /* Global variables ------------------------------------------ */
+const uint64_t addresses[3] = {0xFFFFFFFF11, 0x0000000022, 0x0000000033}; //addresses(timer>PC, PC>timer, BOT>ttimer)
+byte pipeNum=0;
+
 float g_distance_in_cm = 0;
-float lap_time;
+double lap_time;
 unsigned long start_time = 0;
 unsigned long finish_time = 0;
 char buf[15], bot_name[15];
@@ -47,9 +46,35 @@ void recordingLap(bool recording = true){ //  Turn on LEDs if lap is being recor
 
 void resetLapTime(){ //  resets lap time
   start_time = 0;
-  bot_name[0] = '\0';
-  buf[0] = '\0';
   lap_time = 0;
+  bot_name[0] = '\0'; 
+}
+
+void recieveMsg(){
+  if(radio.available(&pipeNum)){
+    radio.read(&buf, sizeof(buf));
+    if(pipeNum == 1){
+      resetLapTime();
+      recordingLap(false);
+      finish_time = 0;
+    }
+    else if(pipeNum == 2 && (millis() - start_time) < 5000 && bot_name[0] == '\0'){
+      strcpy(bot_name, buf);
+    }
+    buf[0] = '\0';
+  }
+}
+
+void sendMsg(char name[15], double time){
+  radio.stopListening();
+  if(name[0] == '\0'){
+    radio.write("noName", 7);
+  }
+  else{
+    radio.write(&bot_name, sizeof(bot_name));
+  }
+  radio.write(&lap_time, sizeof(lap_time));
+  radio.startListening();
 }
 
 /* Arduino functions ---------------------------------------------------------------- */
@@ -69,43 +94,30 @@ void setup() {
 
   /* Set up radio */
   radio.begin();
-  radio.openWritingPipe(addresses[0]);
-  radio.openReadingPipe(1, addresses[1]);
-  radio.openReadingPipe(2, addresses[2]);
+  radio.openWritingPipe(addresses[0]);     // writing pipe to PC
+  radio.openReadingPipe(1, addresses[1]);  // reading pipe from PC
+  radio.openReadingPipe(2, addresses[2]);  // reading pipe from robots
   radio.setPALevel(RF24_PA_MIN);
   radio.startListening();
 }
 
 
 void loop(){
-  if(radio.available(&pipeNum)){
-    radio.read(&buf, sizeof(buf));
-    if(pipeNum == 1){
-      resetLapTime();
-      recordingLap(false);
-      finish_time = 0;
-    }
-    else if(pipeNum == 2 && (millis() - start_time) < 5000 && bot_name[0] == '\0'){
-      strcpy(bot_name, buf);
-    }
-    buf[0] = '\0';
-  }
+  recieveMsg();
 
-  if (distance() < 10.00 && start_time == 0 && (finish_time == 0 || (millis() - finish_time) > 10000)){
+  // Lap start
+  if (distance() < 10.00 && start_time == 0 && (finish_time == 0 || (millis() - finish_time) > 5000)){
     recordingLap();
     start_time = millis();
     finish_time = 0;
   }
 
-  if (distance() < 10.00 && 10000 < (millis() - start_time) && start_time != 0){
-    lap_time = (float)(millis() - start_time)/1000;
+  // Lap finish
+  if (distance() < 10.00 && (millis() - start_time) > 10000 && start_time != 0){
+    lap_time = (double)(millis() - start_time)/1000;
     finish_time = millis();
 
-    radio.stopListening();
-    radio.write(&bot_name, sizeof(bot_name));
-    radio.write(&lap_time, sizeof(lap_time));
-    radio.startListening();
-
+    sendMsg(bot_name, lap_time);
     recordingLap(false);
     resetLapTime();
   }
