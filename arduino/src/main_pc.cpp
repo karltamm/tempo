@@ -3,21 +3,13 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 
-
 #define button_pin      2
-#define right_led       7
-#define left_led        8
-
-/* Radio ------------------------------------------ */
 RF24 radio(9, 10);
-const uint64_t timer_address[2] = {0xF0F0F0F022, 0xF0F0F0FF11};
-
 
 /* Global variables ------------------------------------------ */
+const uint64_t timer_address[2] = {0x0000000022, 0xFFFFFFFF11};
 char bot_name[15];
-float lap_time;
-
-
+double lap_time;
 
 /* Button setup for testing ---------------------------------------------------------------- */
 unsigned long g_last_debounce_time = 0;  // the last time the output pin was toggled
@@ -27,7 +19,7 @@ int g_last_button_state = LOW;
 
 byte buttonRead() {
   int reading = digitalRead(button_pin);
-  if (reading != g_last_button_state) {
+  if (reading != g_last_button_state){
     g_last_debounce_time = millis();
   }
   if ((millis() - g_last_debounce_time) > g_debounce_delay) {
@@ -65,17 +57,19 @@ void loop() {
     radio.write("reset", 6);
     radio.startListening();
   }
+
   if(radio.available()){
     if(bot_name[0] == '\0'){
+      Serial.print("bot_name:");
       radio.read(&bot_name, sizeof(bot_name));
       Serial.println(bot_name);
     }
     else{
-      radio.read(&lap_time, sizeof(lap_time)); 
-      Serial.print("lap_time: ");
-      Serial.println(lap_time);
+      radio.read(&lap_time, sizeof(lap_time));
+      Serial.print("lap_time:");
+      Serial.println(lap_time, 3);
       bot_name[0] = '\0';
     }
-    
+
   }
 }

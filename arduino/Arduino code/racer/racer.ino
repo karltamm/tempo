@@ -1,8 +1,6 @@
-#include <Arduino.h>
 #include <Servo.h>
-#include <SPI.h>
-#include <nRF24L01.h>
-#include <RF24.h>
+#include "radio.h"
+
 
 /* Defines ------------------------------------------------------------------ */
 #define button_pin      2
@@ -18,15 +16,14 @@
 #define standstill      1500
 #define qti_threshold   408
 
-RF24 radio(9, 10); 
+
+
 
 /* Global variables ------------------------------------------ */
-const uint64_t timer_aadress = 0x0000000033;
-
 Servo g_left_wheel;
 Servo g_right_wheel;
-bool msg_sent = false;
-char robot_name[15] = "mainracer";                   // Input robot name 
+char robot_name[15] = "";                   // Input robot name 
+
 
 /* Private functions ------------------------------------------------- */
 byte readQti (byte qti) {                               // Function to read current position on map
@@ -47,54 +44,6 @@ void setLed(byte value_left = LOW, byte value_right = LOW) {
   digitalWrite(left_led, value_left);
 }
 
-void radioTest(){
-  if(robot_name[0] == '\0'){
-    Serial.println("Input robot name ");
-  }
-  else{
-    if(radio.write(&robot_name, sizeof(robot_name))){
-      Serial.println("Connection with timer established");
-      Serial.print("Robot name: ");
-      Serial.println(robot_name);
-    }
-    else{
-      Serial.println("Connection with timer failed");
-    }
-  }
-}
-
-void forward(int t){
-  setLed(LOW, LOW);
-  setWheels(1600, 1400);
-  delay(t);
-}
-
-void right(int t){
-  setLed(LOW, HIGH);
-  setWheels(1600, 1600);
-  delay(t);
-  setWheels();
-  setLed(LOW, LOW);
-}
-
-void left (int t){
-  setLed(HIGH, LOW);
-  setWheels(1400, 1400);
-  delay(t);
-  setWheels();
-  setLed(LOW, LOW);
-}
-
-void sendName(){
-  if(readQti(left_qti) && readQti(middle_qti) && readQti(right_qti)){
-    if(!msg_sent && radio.write(&robot_name, sizeof(robot_name))){ 
-      msg_sent = true;
-    }
-  }
-  else{
-    msg_sent = false;
-  }
-}
 /* Arduino functions ---------------------------------------------------------------- */
 void setup() {
   /* Start serial monitor */
@@ -117,28 +66,11 @@ void setup() {
   setLed();
   delay(500);
 
-  /* Radio setup */
-  radio.begin();
-  radio.openWritingPipe(timer_aadress);
-  radio.setPALevel(RF24_PA_MIN);
-  radio.stopListening();
-
-  /* Radio test*/
-  radioTest();
+  /* Radio setup  and test*/
+  radioSetup();
+  radioTest();  // Can delete after first successful test
 }
 
-void loop() {
-  sendName();
-  if (readQti(left_qti) && readQti(middle_qti) && readQti(right_qti)){ // All sensors on finish line
-    setLed(HIGH, HIGH);
-  }
-  else if (!readQti(left_qti) && !readQti(right_qti)){ // Both sensors on white
-    forward(10);
-  }
-  else if (!readQti(left_qti) && readQti(right_qti)){ // Left sensor on white, right on black
-    right(100);
-  }
-  else if (readQti(left_qti) && !readQti(right_qti)){ // Right sensor on white, Left on black
-    left(100);
-  }
+void loop(){
+  sendName();   // Don't delete
 }
