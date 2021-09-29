@@ -45,8 +45,6 @@ class IncomingDataHandler(Thread):
     def addTime(self, time):
         pass
 
-data_handler = IncomingDataHandler()
-
 # Infinite loop in another thread for testing
 """
 class ThreadingTestClass(Thread):
