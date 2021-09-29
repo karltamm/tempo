@@ -63,11 +63,10 @@ QScrollArea {
 
 #AppSubtitle {
   font-size: 36px;
-  font-family: "Roboto Bold";
 }
 
 #OpenCompetitions {
-  margin-top: 20px;
+  margin-top: 40px;
 }
 
 #ExitApp {
@@ -96,6 +95,7 @@ QLineEdit {
   border-radius: 10px;
   color: #fff;
   font-size: 16px;
+  font-family: "Roboto Light";
 }
 
 [class="input_label"] {
@@ -107,6 +107,7 @@ QLineEdit {
   margin-bottom: 20px;
   color: #ffc413;
   font-size: 16px;
+  font-family: "Roboto Bold";
 }
 
 /* Competition UI */

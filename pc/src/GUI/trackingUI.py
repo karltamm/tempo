@@ -145,7 +145,8 @@ class LapTimesListModel(QtCore.QAbstractListModel):
 
     def data(self, index, role):
         if role == QtCore.Qt.DisplayRole:
-            return formatTime(self.lap_times[index.row()])
+            row_number = str(index.row() + 1) + ")  "
+            return row_number + formatTime(self.lap_times[index.row()])
 
     def rowCount(self, index):
         return len(self.lap_times)
