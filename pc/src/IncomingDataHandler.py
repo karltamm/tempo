@@ -8,26 +8,42 @@ class IncomingDataHandler(Thread):
         Thread.__init__(self)
         self.running = True
         self.selected_port = None
-        self.start() # Starts the thread's activity (run function)
+        self.start() # Starts the threads activity (run function)
     
     def run(self):
         while self.running:
-            
-            # Open serial port with arduino
+            # Opens the serial port with connected arduino
             while self.selected_port is None:
                 correct_ports = [
                 p.device
                 for p in serial.tools.list_ports.comports()
-                if 'Arduino' in p.description  # may need tweaking to match new arduinos
+                if 'Arduino' in p.description
                 ]   # All ports with arduino connected added to list
                 if not correct_ports:
                     print("No Arduino found...")
                 else:
                     self.selected_port = serial.Serial(correct_ports[0], baudrate=9600, timeout=5) # Open serial port with first arduino in list
                 time.sleep(3) # Either waits until looking for arduino again, or gives arduino board enough time to initialize fully before requesting data
-                    
+   
             arduinoData = str(self.selected_port.readline().decode('ascii'))
-            dataType = arduinoData.split(":")[0] # Gets type of data before ":", E.g. gets "bot_name" from "bot_name:nimi"
+            dataType = arduinoData.split(":")[0] # Gets type of data before ":", E.g. gets "bot_name" from "bot_name:name"
+            if (dataType == "bot_name"):
+                dataValue = arduinoData.split(":")[1]
+                # TODO call self.renameRobot(dataValue) in trackingUI class
+                # renameBot(dataValue)
+                pass
+            elif (dataType == "lap_time"):
+                dataValue = arduinoData.split(":")[1]
+                # TODO call self.lap_times_list_model.addTime(dataValue) in LapTimesListModel class
+                # addTime(dataValue)
+                pass
+            arduinoData = "" # Empties received data after using it (wont cause errors with .split(":")[0] on empty string)
+
+    def renameBot(self, name):
+        pass
+    
+    def addTime(self, time):
+        pass
 
 data_handler = IncomingDataHandler()
 
