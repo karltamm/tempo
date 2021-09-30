@@ -1,15 +1,18 @@
 import serial # Uses pySerial
 import serial.tools.list_ports
-from threading import Thread
+from PySide6 import QtCore
 import time
 
-class IncomingDataHandler(Thread):
-    def __init__(self):
-        Thread.__init__(self)
-        self.running = True
+class IncomingDataHandler(QtCore.QRunnable):
+    def __init__(self, renameBot, addTime):
+        super().init()
+        self.renameBot = renameBot
+        self.addTime = addTime
         self.selected_port = None
-        self.start() # Starts the threads activity (run function)
+        self.running = True
+        
     
+    @QtCore.Slot()
     def run(self):
         while self.running:
             # Opens the serial port with connected arduino
@@ -25,44 +28,16 @@ class IncomingDataHandler(Thread):
                     self.selected_port = serial.Serial(correct_ports[0], baudrate=9600, timeout=5) # Open serial port with first arduino in list
                 time.sleep(3) # Either waits until looking for arduino again, or gives arduino board enough time to initialize fully before requesting data
    
+            # Starts receiving data from the Arduino
             arduinoData = str(self.selected_port.readline().decode('ascii'))
             dataType = arduinoData.split(":")[0] # Gets type of data before ":", E.g. gets "bot_name" from "bot_name:name"
             if (dataType == "bot_name"):
                 dataValue = arduinoData.split(":")[1]
-                # TODO call self.renameRobot(dataValue) in trackingUI class
-                # renameBot(dataValue)
-                pass
+                renameBot(dataValue)
             elif (dataType == "lap_time"):
                 dataValue = arduinoData.split(":")[1]
-                # TODO call self.lap_times_list_model.addTime(dataValue) in LapTimesListModel class
-                # addTime(dataValue)
-                pass
+                addTime(dataValue)
             arduinoData = "" # Empties received data after using it (wont cause errors with .split(":")[0] on empty string)
 
-    def renameBot(self, name):
-        pass
-    
-    def addTime(self, time):
-        pass
-
-# Infinite loop in another thread for testing
-"""
-class ThreadingTestClass(Thread):
-    def __init__(self):
-        Thread.__init__(self)
-        self.running = True
-        self.start()
-    
-    def run(self):
-        while self.running:
-            print("second infinite loop...")
-            time.sleep(2)
-    
-    def stop(self):
+    def stopWorker(self):
         self.running = False
-
-b = ThreadingTestClass()
-time.sleep(10)
-print("Second infinite loop stopped")
-b.stop()
-"""
