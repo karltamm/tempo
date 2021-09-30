@@ -4,6 +4,7 @@ from PySide6 import QtCore
 import random  # for testing!
 
 from .myWidgets import Page, PageTitle, Button, SectionTitle, InputDialog, formatTime
+from ..IncomingDataHandler import IncomingDataHandler
 
 
 class TrackingUI(Page):
@@ -22,6 +23,9 @@ class TrackingUI(Page):
         self.generateLayout()
 
         self.number = 0
+        
+        data_handler = IncomingDataHandler(self.renameRobot)
+        self.threadpool.start(data_handler)
 
     def generateHeader(self):
         page_title = PageTitle("Tracking")

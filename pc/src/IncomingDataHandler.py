@@ -5,7 +5,7 @@ import time
 
 class IncomingDataHandler(QtCore.QRunnable):
     def __init__(self, renameBot, addTime):
-        super().init()
+        super().__init__()
         self.renameBot = renameBot
         self.addTime = addTime
         self.selected_port = None
