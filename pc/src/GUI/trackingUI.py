@@ -23,8 +23,9 @@ class TrackingUI(Page):
 
         self.generateLayout()
 
-        self.number = 0
+        self.setupIncomingDataHandler()
 
+    def setupIncomingDataHandler(self):
         self.data_handler = IncomingDataHandler(
             self.renameRobot, self.lap_times_list_model.addTime
         )
@@ -52,7 +53,7 @@ class TrackingUI(Page):
         self.header.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         self.header.addLayout(back_btn_layout)
         self.header.addWidget(page_title)
-        self.header.addWidget(test_btn)
+        # self.header.addWidget(test_btn)
 
     def generateRobotNameSection(self):
         robot_name_label = SectionTitle("Robot Name")
@@ -78,9 +79,7 @@ class TrackingUI(Page):
         self.robot_name.setText(name)
 
     def addDummyData(self):
-
         self.lap_times_list_model.addTime(random.randrange(30000, 300000))
-        self.number += 1
 
     def deleteSelectedTimes(self):
         all_selected = self.lap_times_list_view.selectedIndexes()
@@ -145,6 +144,15 @@ class TrackingUI(Page):
         # Removes previously held data
         self.lap_times_list_model.lap_times = []  # Clear
         self.robot_name.setText(self.robot_default_name)
+
+        # Check if PC radio module is connected
+        if self.data_handler.selected_port == None:
+            QtWidgets.QMessageBox.critical(
+                self, "Error", "Connect PC radio module into USB port!"
+            )
+
+            # Go back because tracking is useless without radio module
+            self.openCompetitionUI(self.competition_name, self.competition_id)
 
 
 class LapTimesListModel(QtCore.QAbstractListModel):

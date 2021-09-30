@@ -75,6 +75,7 @@ QScrollArea {
 
 /* Competitions page */
 #AddCompetitionBtn {
+  margin-top: 10px;
   margin-bottom: 20px;
 }
 
@@ -111,9 +112,9 @@ QLineEdit {
 }
 
 /* Competition UI */
-/* #TrackRobotBtn {
-  margin-bottom: 20px;
-} */
+#TrackRobotBtn {
+  margin-top: 10px;
+}
 
 #LeaderboardView {
   border: 0;
