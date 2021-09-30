@@ -103,7 +103,9 @@ class CompetitionsList(Page):
             )
 
     def openCompetitionCreator(self):
-        InputDialog("Competition Name", self, self.addCompetition)
+        InputDialog(
+            "Competition Name", max_length=10, parent=self, callback=self.addCompetition
+        )
 
     def addCompetition(self, name):
         if self.competition_db.addCompetition(name):
