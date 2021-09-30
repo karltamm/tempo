@@ -3,7 +3,9 @@ from PySide6 import QtCore
 
 import random  # for testing!
 
+
 from .myWidgets import Page, PageTitle, Button, SectionTitle, InputDialog, formatTime
+from IncomingDataHandler import IncomingDataHandler
 
 
 class TrackingUI(Page):
@@ -22,6 +24,14 @@ class TrackingUI(Page):
         self.generateLayout()
 
         self.number = 0
+
+        self.data_handler = IncomingDataHandler(
+            self.renameRobot, self.lap_times_list_model.addTime
+        )
+        self.threadpool = (
+            QtCore.QThreadPool()
+        )  # NB! if threadpool is not this class variable (no ".self") then GUI wont be displayed
+        self.threadpool.start(self.data_handler)
 
     def generateHeader(self):
         page_title = PageTitle("Tracking")

@@ -1,4 +1,5 @@
 from PySide6 import QtWidgets
+from os import _exit
 
 from GUI.app import MainWindow, loadFont, setFontSmooth
 
@@ -24,4 +25,7 @@ loadFont("Roboto", "Roboto-Bold")
 setFontSmooth()
 
 window = MainWindow()
-app.exec()
+
+# 1. starts GUI
+# 2. If GUI is closed then _exit terminates the whole process
+_exit(app.exec())
