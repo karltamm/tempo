@@ -3,8 +3,6 @@ from PySide6 import QtCore
 
 import random  # for testing!
 
-import sys
-sys.path.append("..") # Adds higher directory to python modules path (cant import using ".." for some reason)
 
 from .myWidgets import Page, PageTitle, Button, SectionTitle, InputDialog, formatTime
 from IncomingDataHandler import IncomingDataHandler
@@ -26,9 +24,13 @@ class TrackingUI(Page):
         self.generateLayout()
 
         self.number = 0
-        
-        self.data_handler = IncomingDataHandler(self.renameRobot, self.lap_times_list_model.addTime)
-        self.threadpool = QtCore.QThreadPool()
+
+        self.data_handler = IncomingDataHandler(
+            self.renameRobot, self.lap_times_list_model.addTime
+        )
+        self.threadpool = (
+            QtCore.QThreadPool()
+        )  # NB! if threadpool is not this class variable (no ".self") then GUI wont be displayed
         self.threadpool.start(self.data_handler)
 
     def generateHeader(self):
@@ -143,10 +145,6 @@ class TrackingUI(Page):
         # Removes previously held data
         self.lap_times_list_model.lap_times = []  # Clear
         self.robot_name.setText(self.robot_default_name)
-        
-    def closeEvent(self, event) -> None:
-        self.data_handler.stopWorker()
-        return super().closeEvent(event)
 
 
 class LapTimesListModel(QtCore.QAbstractListModel):
