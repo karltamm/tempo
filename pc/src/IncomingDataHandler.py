@@ -4,16 +4,16 @@ from PySide6 import QtCore
 import time
 
 class IncomingDataHandler(QtCore.QRunnable):
-    def __init__(self, renameBot, addTime):
+    def __init__(self, renameBot, addTime) -> None:
         super().__init__()
         self.renameBot = renameBot
         self.addTime = addTime
         self.selected_port = None
-        self.running = True
+        self.is_running = True
 
     @QtCore.Slot()
     def run(self):
-        while self.running:
+        while self.is_running:
             # Opens the serial port with connected arduino
             while self.selected_port is None:
                 correct_ports = [
@@ -25,6 +25,7 @@ class IncomingDataHandler(QtCore.QRunnable):
                     print("No Arduino found...")
                 else:
                     self.selected_port = serial.Serial(correct_ports[0], baudrate=9600, timeout=5) # Open serial port with first arduino in list
+                    print("Connected to Arduino")
                 time.sleep(3) # Either waits until looking for arduino again, or gives arduino board enough time to initialize fully before requesting data
    
             # Starts receiving data from the Arduino
@@ -39,4 +40,4 @@ class IncomingDataHandler(QtCore.QRunnable):
             arduinoData = "" # Empties received data after using it (wont cause errors with .split(":")[0] on empty string)
 
     def stopWorker(self):
-        self.running = False
+        self.is_running = False

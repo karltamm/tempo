@@ -3,8 +3,11 @@ from PySide6 import QtCore
 
 import random  # for testing!
 
+import sys
+sys.path.append("..") # Adds higher directory to python modules path (cant import using ".." for some reason)
+
 from .myWidgets import Page, PageTitle, Button, SectionTitle, InputDialog, formatTime
-from ..IncomingDataHandler import IncomingDataHandler
+from IncomingDataHandler import IncomingDataHandler
 
 
 class TrackingUI(Page):
