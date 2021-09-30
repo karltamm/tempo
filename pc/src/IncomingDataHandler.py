@@ -10,8 +10,7 @@ class IncomingDataHandler(QtCore.QRunnable):
         self.addTime = addTime
         self.selected_port = None
         self.running = True
-        
-    
+
     @QtCore.Slot()
     def run(self):
         while self.running:
@@ -33,10 +32,10 @@ class IncomingDataHandler(QtCore.QRunnable):
             dataType = arduinoData.split(":")[0] # Gets type of data before ":", E.g. gets "bot_name" from "bot_name:name"
             if (dataType == "bot_name"):
                 dataValue = arduinoData.split(":")[1]
-                renameBot(dataValue)
+                self.renameBot(dataValue)
             elif (dataType == "lap_time"):
                 dataValue = arduinoData.split(":")[1]
-                addTime(dataValue)
+                self.addTime(dataValue)
             arduinoData = "" # Empties received data after using it (wont cause errors with .split(":")[0] on empty string)
 
     def stopWorker(self):

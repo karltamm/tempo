@@ -24,8 +24,9 @@ class TrackingUI(Page):
 
         self.number = 0
         
-        data_handler = IncomingDataHandler(self.renameRobot)
-        self.threadpool.start(data_handler)
+        self.data_handler = IncomingDataHandler(self.renameRobot, self.lap_times_list_model.addTime)
+        self.threadpool = QtCore.QThreadPool()
+        self.threadpool.start(self.data_handler)
 
     def generateHeader(self):
         page_title = PageTitle("Tracking")
@@ -139,6 +140,10 @@ class TrackingUI(Page):
         # Removes previously held data
         self.lap_times_list_model.lap_times = []  # Clear
         self.robot_name.setText(self.robot_default_name)
+        
+    def closeEvent(self, event) -> None:
+        self.data_handler.stopWorker()
+        return super().closeEvent(event)
 
 
 class LapTimesListModel(QtCore.QAbstractListModel):
