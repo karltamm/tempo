@@ -62,7 +62,7 @@ class TrackingUI(Page):
         self.robot_name_layout.addLayout(rename_layout)
 
     def openRenameDialog(self):
-        InputDialog("Rename Robot", self, self.renameRobot)
+        InputDialog("Rename Robot", parent=self, callback=self.renameRobot)
 
     def renameRobot(self, name):
         self.robot_name.setText(name)

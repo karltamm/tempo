@@ -114,14 +114,23 @@ class PageTitle(QtWidgets.QLabel):
 
 
 class InputDialog(QtWidgets.QDialog):
-    def __init__(self, input_label, parent=None, callback=None):
+    def __init__(self, input_label_name, max_length=None, parent=None, callback=None):
         super().__init__(parent)
 
         self.callback = callback or (lambda x: None)
+        self.input_label_name = input_label_name
 
-        self.setWindowTitle(input_label)
+        self.max_length = max_length or 20  # Default
 
-        input_label = QtWidgets.QLabel(input_label)
+        self.setupUI()
+
+        self.exec()
+
+    def setupUI(self):
+        self.setFixedSize(300, 200)
+        self.setWindowTitle(self.input_label_name)
+
+        input_label = QtWidgets.QLabel(self.input_label_name)
         input_label.setProperty("class", "input_label")
 
         self.input = QtWidgets.QLineEdit()
@@ -148,7 +157,8 @@ class InputDialog(QtWidgets.QDialog):
         layout.addLayout(buttons)
         self.setLayout(layout)
 
-        self.exec()
+    def setInputMaxLength(self, length):
+        self.max_length = length
 
     def save(self):
         input_val = self.input.text()
@@ -161,8 +171,8 @@ class InputDialog(QtWidgets.QDialog):
             self.input_feedback.setText("Too short")
             return False
 
-        if len(value) > 20:
-            self.input_feedback.setText("Max 20 chars")
+        if len(value) > self.max_length:
+            self.input_feedback.setText(f"Max {self.max_length} characters")
             return False
 
         # Everything okay
