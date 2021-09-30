@@ -70,7 +70,7 @@ class TrackingUI(Page):
         self.robot_name_layout.addLayout(rename_layout)
 
     def openRenameDialog(self):
-        InputDialog("Rename Robot", self, self.renameRobot)
+        InputDialog("Rename Robot", parent=self, callback=self.renameRobot)
 
     def renameRobot(self, name):
         self.robot_name.setText(name)
@@ -157,7 +157,8 @@ class LapTimesListModel(QtCore.QAbstractListModel):
 
     def data(self, index, role):
         if role == QtCore.Qt.DisplayRole:
-            return formatTime(self.lap_times[index.row()])
+            row_number = str(index.row() + 1) + ")  "
+            return row_number + formatTime(self.lap_times[index.row()])
 
     def rowCount(self, index):
         return len(self.lap_times)
