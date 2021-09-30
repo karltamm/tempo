@@ -110,7 +110,7 @@ class PageTitle(QtWidgets.QLabel):
         class_name = self.__class__.__name__
         self.setObjectName(id_tag or class_name)
 
-        self.setContentsMargins(0, 20, 0, 10)
+        self.setContentsMargins(0, 20, 0, 0)
 
 
 class InputDialog(QtWidgets.QDialog):
