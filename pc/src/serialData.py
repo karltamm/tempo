@@ -4,52 +4,6 @@ from PySide6 import QtCore
 import time
 
 
-class IncomingDataHandler(QtCore.QRunnable):
-    def __init__(self, renameBot, addTime) -> None:
-        super().__init__()
-        self.renameBot = renameBot
-        self.addTime = addTime
-        self.selected_port = None
-        self.is_running = True
-
-    @QtCore.Slot()
-    def run(self):
-        while self.is_running:
-            # Opens the serial port with connected arduino
-            while self.selected_port is None:
-                correct_ports = [
-                    p.device
-                    for p in serial.tools.list_ports.comports()
-                    if "Arduino" in p.description
-                ]  # All ports with arduino connected added to list
-                if not correct_ports:
-                    print("No Arduino found...")
-                else:
-                    self.selected_port = serial.Serial(
-                        correct_ports[0], baudrate=9600, timeout=5
-                    )  # Open serial port with first arduino in list
-                    print("Connected to Arduino")
-                time.sleep(
-                    3
-                )  # Either waits until looking for arduino again, or gives arduino board enough time to initialize fully before requesting data
-
-            # Starts receiving data from the Arduino
-            arduinoData = str(self.selected_port.readline().decode("ascii"))
-            dataType = arduinoData.split(":")[
-                0
-            ]  # Gets type of data before ":", E.g. gets "bot_name" from "bot_name:name"
-            if dataType == "bot_name":
-                dataValue = arduinoData.split(":")[1]
-                self.renameBot(dataValue)
-            elif dataType == "lap_time":
-                dataValue = arduinoData.split(":")[1]
-                self.addTime(dataValue)
-            arduinoData = ""  # Empties received data after using it (wont cause errors with .split(":")[0] on empty string)
-
-    def stopWorker(self):
-        self.is_running = False
-
-
 class SerialDataHandler(QtCore.QRunnable):
     def __init__(self, addTime, renameBot) -> None:
         super().__init__()
@@ -66,38 +20,33 @@ class SerialDataHandler(QtCore.QRunnable):
         while self.is_running:
             while self.connection is None:
                 self.findArduinoPort()
-                time.sleep(
-                    3
-                )  # Don't check every moment if user has plugged in the Arduino, people are slow
+                # Don't check every moment whether user has plugged in the Arduino, people are slow
+                time.sleep(3)
 
             self.checkIncomingData()
 
     def checkIncomingData(self):
-        serial_data = str(self.selected_port.readline().decode("ascii"))
-        data_id = serial_data.split(":")[
-            0
-        ]  # Gets type of data before ":", E.g. gets "bot_name" from "bot_name:name"
+        serial_data = str(self.connection.readline().decode("ascii"))
 
-        if data_id == "bot_name":
+        if ":" in serial_data:
+            # Gets type of data before ":", E.g. gets "bot_name" from "bot_name:name"
+            data_id = serial_data.split(":")[0]
             data_value = serial_data.split(":")[1]
-            self.renameBot(data_value)
-        elif data_id == "lap_time":
-            data_value = serial_data.split(":")[1]
-            self.addTime(data_value)
 
-        # serial_data = ""  # Empties received data after using it (wont cause errors with .split(":")[0] on empty string)
+            if data_id == "bot_name":
+                self.renameBot(data_value)
+            elif data_id == "lap_time":
+                self.addTime(int(data_value))
 
     def findArduinoPort(self):
-        correct_ports = [
-            p.device
-            for p in serial.tools.list_ports.comports()
-            if "Arduino" in p.description
-        ]
+        connected_ports = serial.tools.list_ports.comports()
 
-        if correct_ports:
-            self.connection = serial.Serial(correct_ports[0], baudrate=9600, timeout=5)
-        else:
-            print("Arduino is not connected")
+        for port in connected_ports:
+            if "CH340" in port.description:
+                # "CH340" is chip used by Arduino for USB connections
+                # port.device is Windows port (e.g COM1)
+                self.connection = serial.Serial(port.device, baudrate=9600, timeout=5)
+                break
 
     def stop(self):
         self.is_running = False
@@ -105,7 +54,7 @@ class SerialDataHandler(QtCore.QRunnable):
     def startNewTracking(self):
         # Send time tracking reset signal to PC radio module (arduino) that sends signal to the TimeTracker itself
         if self.connection:
-            self.port_connection.write("reset")
+            self.connection.write("reset".encode("ascii"))
             return True  # Success
         else:
             return False  # No connection
