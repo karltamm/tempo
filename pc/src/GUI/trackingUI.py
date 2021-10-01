@@ -5,7 +5,7 @@ import random  # for testing!
 
 
 from .myWidgets import Page, PageTitle, Button, SectionTitle, InputDialog, formatTime
-from IncomingDataHandler import IncomingDataHandler
+from serialData import SerialDataHandler
 
 
 class TrackingUI(Page):
@@ -23,16 +23,15 @@ class TrackingUI(Page):
 
         self.generateLayout()
 
-        self.setupIncomingDataHandler()
+        self.setupSerialDataHandler()
 
-    def setupIncomingDataHandler(self):
-        self.data_handler = IncomingDataHandler(
-            self.renameRobot, self.lap_times_list_model.addTime
+    def setupSerialDataHandler(self):
+        self.serial_data_handler = SerialDataHandler(
+            self.lap_times_list_model.addTime, self.renameRobot
         )
-        self.threadpool = (
-            QtCore.QThreadPool()
-        )  # NB! if threadpool is not this class variable (no ".self") then GUI wont be displayed
-        self.threadpool.start(self.data_handler)
+        self.threadpool = QtCore.QThreadPool()
+        # NB! if threadpool is not this class variable (no ".self") then GUI wont be displayed
+        self.threadpool.start(self.serial_data_handler)
 
     def generateHeader(self):
         page_title = PageTitle("Tracking")
@@ -145,8 +144,9 @@ class TrackingUI(Page):
         self.lap_times_list_model.lap_times = []  # Clear
         self.robot_name.setText(self.robot_default_name)
 
+        # Send reset signal to PC module
         # Check if PC radio module is connected
-        if self.data_handler.selected_port == None:
+        if not self.serial_data_handler.startNewTracking():
             QtWidgets.QMessageBox.critical(
                 self, "Error", "Connect PC radio module into USB port!"
             )
