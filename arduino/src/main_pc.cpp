@@ -10,6 +10,7 @@ RF24 radio(9, 10);
 const uint64_t timer_address[2] = {0x0000000022, 0xFFFFFFFF11};
 char bot_name[15];
 double lap_time;
+char msg[10];
 
 /* Button setup for testing ---------------------------------------------------------------- */
 unsigned long g_last_debounce_time = 0;  // the last time the output pin was toggled
@@ -32,6 +33,30 @@ byte buttonRead() {
   }
   g_last_button_state = reading;
   return 0;
+}
+
+void readSM(){
+  char letter;
+  if(Serial.available()){
+    for(int i = 0; 1;i++){
+      letter = Serial.read();
+      if(letter == '\n'){
+        msg[i] = '\0';
+        break;
+      }
+      else{
+        msg[i] = letter;
+      }
+    }
+    sendmsg();
+  }
+}
+
+void sendmsg(){
+  radio.stopListening;
+  radio.write(msg, sizeof(msg));
+  radio.startListening;
+  msg[0] = '\0'
 
 }
 /* Arduino functions ---------------------------------------------------------------- */
@@ -51,13 +76,8 @@ void setup() {
 }
 
 
-void loop() {
-  if (buttonRead() == 1){
-    radio.stopListening();
-    radio.write("reset", 6);
-    radio.startListening();
-  }
-
+void loop(){
+  readSM();
   if(radio.available()){
     if(bot_name[0] == '\0'){
       Serial.print("bot_name:");
