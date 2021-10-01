@@ -5,7 +5,7 @@ import random  # for testing!
 
 
 from .myWidgets import Page, PageTitle, Button, SectionTitle, InputDialog, formatTime
-from IncomingDataHandler import IncomingDataHandler
+from serialData import IncomingDataHandler, SerialDataHandler
 
 
 class TrackingUI(Page):
@@ -23,16 +23,27 @@ class TrackingUI(Page):
 
         self.generateLayout()
 
-        self.setupIncomingDataHandler()
+        # self.setupIncomingDataHandler()
+        # self.outgoing_data_handler = OutgoingDataHandler()
+        self.setupSerialDataHandler()
 
-    def setupIncomingDataHandler(self):
-        self.data_handler = IncomingDataHandler(
-            self.renameRobot, self.lap_times_list_model.addTime
+    def setupSerialDataHandler(self):
+        self.data_handler = SerialDataHandler(
+            self.lap_times_list_model.addTime, self.renameRobot
         )
         self.threadpool = (
             QtCore.QThreadPool()
         )  # NB! if threadpool is not this class variable (no ".self") then GUI wont be displayed
         self.threadpool.start(self.data_handler)
+
+    # def setupIncomingDataHandler(self):
+    #     self.data_handler = IncomingDataHandler(
+    #         self.renameRobot, self.lap_times_list_model.addTime
+    #     )
+    #     self.threadpool = (
+    #         QtCore.QThreadPool()
+    #     )  # NB! if threadpool is not this class variable (no ".self") then GUI wont be displayed
+    #     self.threadpool.start(self.data_handler)
 
     def generateHeader(self):
         page_title = PageTitle("Tracking")
@@ -146,7 +157,7 @@ class TrackingUI(Page):
         self.robot_name.setText(self.robot_default_name)
 
         # Check if PC radio module is connected
-        if self.data_handler.selected_port == None:
+        if self.data_handler.connection == None:
             QtWidgets.QMessageBox.critical(
                 self, "Error", "Connect PC radio module into USB port!"
             )

@@ -48,3 +48,64 @@ class IncomingDataHandler(QtCore.QRunnable):
 
     def stopWorker(self):
         self.is_running = False
+
+
+class SerialDataHandler(QtCore.QRunnable):
+    def __init__(self, addTime, renameBot) -> None:
+        super().__init__()
+
+        self.connection = None
+        self.is_running = True
+
+        self.addTime = addTime
+        self.renameBot = renameBot
+
+    @QtCore.Slot()
+    def run(self):
+        # This function runs as a separate thread
+        while self.is_running:
+            while self.connection is None:
+                self.findArduinoPort()
+                time.sleep(
+                    3
+                )  # Don't check every moment if user has plugged in the Arduino, people are slow
+
+            self.checkIncomingData()
+
+    def checkIncomingData(self):
+        serial_data = str(self.selected_port.readline().decode("ascii"))
+        data_id = serial_data.split(":")[
+            0
+        ]  # Gets type of data before ":", E.g. gets "bot_name" from "bot_name:name"
+
+        if data_id == "bot_name":
+            data_value = serial_data.split(":")[1]
+            self.renameBot(data_value)
+        elif data_id == "lap_time":
+            data_value = serial_data.split(":")[1]
+            self.addTime(data_value)
+
+        # serial_data = ""  # Empties received data after using it (wont cause errors with .split(":")[0] on empty string)
+
+    def findArduinoPort(self):
+        correct_ports = [
+            p.device
+            for p in serial.tools.list_ports.comports()
+            if "Arduino" in p.description
+        ]
+
+        if correct_ports:
+            self.connection = serial.Serial(correct_ports[0], baudrate=9600, timeout=5)
+        else:
+            print("Arduino is not connected")
+
+    def stop(self):
+        self.is_running = False
+
+    def startNewTracking(self):
+        # Send time tracking reset signal to PC radio module (arduino) that sends signal to the TimeTracker itself
+        if self.connection:
+            self.port_connection.write("reset")
+            return True  # Success
+        else:
+            return False  # No connection
