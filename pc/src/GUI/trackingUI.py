@@ -28,13 +28,13 @@ class TrackingUI(Page):
         self.setupSerialDataHandler()
 
     def setupSerialDataHandler(self):
-        self.data_handler = SerialDataHandler(
+        self.serial_data_handler = SerialDataHandler(
             self.lap_times_list_model.addTime, self.renameRobot
         )
         self.threadpool = (
             QtCore.QThreadPool()
         )  # NB! if threadpool is not this class variable (no ".self") then GUI wont be displayed
-        self.threadpool.start(self.data_handler)
+        self.threadpool.start(self.serial_data_handler)
 
     # def setupIncomingDataHandler(self):
     #     self.data_handler = IncomingDataHandler(
@@ -156,8 +156,9 @@ class TrackingUI(Page):
         self.lap_times_list_model.lap_times = []  # Clear
         self.robot_name.setText(self.robot_default_name)
 
+        # Send reset signal to PC module
         # Check if PC radio module is connected
-        if self.data_handler.connection == None:
+        if not self.serial_data_handler.startNewTracking():
             QtWidgets.QMessageBox.critical(
                 self, "Error", "Connect PC radio module into USB port!"
             )
