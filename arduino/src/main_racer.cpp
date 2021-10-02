@@ -16,56 +16,47 @@
 #define min_pulse       1300
 #define max_pulse       1700
 #define standstill      1500
-#define qti_threshold   408
+#define qti_threshold   500
 
 RF24 radio(9, 10);
-
- 
-/* Global variables ------------------------------------------ */
-Servo g_left_wheel;
-Servo g_right_wheel;
-char robot_name[15] = "namesafjdspag[ajk[akasvjp]";
-
-/* Private functions ------------------------------------------------- */
-
-byte readQti (byte qti) {                               // Function to read current position on map
-  digitalWrite(qti, HIGH);                              // Send an infrared signal
-  delayMicroseconds(1000);                               // Wait for 1ms, very important!
-  digitalWrite(qti, LOW);                               // Set the pin low again
-  return ( analogRead(qti) > qti_threshold ? 1 : 0);    // Return the converted result: if analog value more then 100 return 1, else 0
-}
-
+byte readQti(byte);
+/* Class ------------------------------------------ */
 class trackingAPI{
   private:
     const uint64_t timer_aadress = 0x0000000033;
     bool msg_sent = false;
+    char robot_name[21];
+
+  public:
+    void setBotName(const char* name){
+      if(name[0] == '\0' || strcmp(name, "RobotNameHere") == 0){
+        Serial.println("Input robot name");
+        while(1);
+      }
+      else if(strlen(name) > 21){
+        Serial.println("Robot name too long");
+        while(1);
+      }
+      else{
+        strcpy(robot_name, name);
+        Serial.print("Robot name: ");
+        Serial.println(robot_name);
+      }
+    }
 
     void radioSetup(){
       radio.begin();
       radio.openWritingPipe(timer_aadress);
       radio.stopListening();
-    } 
-
-  public:
-    void radioTest(){
-      radioSetup();
-      if(robot_name[0] == '\0'){
-        Serial.println("Input robot name");
-      }
-      else if(strlen(robot_name)>15){
-        Serial.println("Robot name too long");
+      if(radio.write(&robot_name, sizeof(robot_name))){
+        Serial.println("Connection with timer established");
       }
       else{
-        if(radio.write(&robot_name, sizeof(robot_name))){
-          Serial.println("Connection with timer established");
-          Serial.print("Robot name: ");
-          Serial.println(robot_name);
-        }
-        else{
-          Serial.println("Connection with timer failed");
-        }
+        Serial.println("Connection with timer failed");
       }
     }
+    
+    
     void sendName(){
       if(readQti(left_qti) && readQti(middle_qti) && readQti(right_qti)){
         if(!msg_sent && radio.write(&robot_name, sizeof(robot_name))){ 
@@ -77,8 +68,20 @@ class trackingAPI{
       }
     }
 };
+ 
+/* Global variables ------------------------------------------ */
+Servo g_left_wheel;
+Servo g_right_wheel;
+trackingAPI tracking;
 
-trackingAPI test;
+/* Private functions ------------------------------------------------- */
+
+byte readQti (byte qti) {                               // Function to read current position on map
+  digitalWrite(qti, HIGH);                              // Send an infrared signal
+  delayMicroseconds(1000);                               // Wait for 1ms, very important!
+  digitalWrite(qti, LOW);                               // Set the pin low again
+  return ( analogRead(qti) > qti_threshold ? 1 : 0);    // Return the converted result: if analog value more then 100 return 1, else 0
+}
 
 void setWheels(int delay_left = 1500, int delay_right = 1500) {
   g_left_wheel.writeMicroseconds(delay_left);
@@ -101,7 +104,7 @@ void right(int t){
   setLed(LOW, HIGH);
   setWheels(1600, 1600);
   delay(t);
-  setWheels();
+  //setWheels();
   setLed(LOW, LOW);
 }
 
@@ -109,7 +112,7 @@ void left (int t){
   setLed(HIGH, LOW);
   setWheels(1400, 1400);
   delay(t);
-  setWheels();
+  //setWheels();
   setLed(LOW, LOW);
 }
 
@@ -136,12 +139,13 @@ void setup() {
   delay(500);
 
   /* Radio test*/
-  test.radioTest();
+  tracking.setBotName("test1");  // Input robot name (max 20 characters)
+  tracking.radioSetup();
 }
 
 void loop() {
-  test.sendName();
-  /*if (readQti(left_qti) && readQti(middle_qti) && readQti(right_qti)){ // All sensors on finish line
+  tracking.sendName();
+  if (readQti(left_qti) && readQti(middle_qti) && readQti(right_qti)){ // All sensors on finish line
     setLed(HIGH, HIGH);
   }
   else if (!readQti(left_qti) && !readQti(right_qti)){ // Both sensors on white
@@ -152,5 +156,5 @@ void loop() {
   }
   else if (readQti(left_qti) && !readQti(right_qti)){ // Right sensor on white, Left on black
     left(100);
-  }*/
+  }
 }

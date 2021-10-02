@@ -3,69 +3,44 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 
-#define button_pin      2
 RF24 radio(9, 10);
 
 /* Global variables ------------------------------------------ */
 const uint64_t timer_address[2] = {0x0000000022, 0xFFFFFFFF11};
-char bot_name[15];
-double lap_time;
-char msg[10];
+char buf_in[21];
+char buf_out[21];
+int i = 0;
 
-/* Button setup for testing ---------------------------------------------------------------- */
-unsigned long g_last_debounce_time = 0;  // the last time the output pin was toggled
-unsigned long g_debounce_delay = 50;    // the debounce time; increase if the output flickers
-int g_button_state;             // the current reading from the input pin
-int g_last_button_state = LOW;
+/* Functions ------------------------------------------ */
+void sendmsg(){
+  radio.stopListening();
+  radio.write(buf_out, sizeof(buf_out));
+  radio.startListening();
+  buf_out[0] = '\0';
 
-byte buttonRead() {
-  int reading = digitalRead(button_pin);
-  if (reading != g_last_button_state){
-    g_last_debounce_time = millis();
-  }
-  if ((millis() - g_last_debounce_time) > g_debounce_delay) {
-    if (reading != g_button_state) {
-      g_button_state = reading;
-      if (g_button_state == HIGH) {
-        return 1;
-      }
-    }
-  }
-  g_last_button_state = reading;
-  return 0;
 }
-
-void readSM(){
+void readSP(){
   char letter;
   if(Serial.available()){
-    for(int i = 0; 1;i++){
-      letter = Serial.read();
-      if(letter == '\n'){
-        msg[i] = '\0';
-        break;
-      }
-      else{
-        msg[i] = letter;
-      }
+    letter = Serial.read();
+    if(letter != '\n' && letter > 0){
+      buf_out[i] = letter;
+      i++;
     }
-    sendmsg();
+    else if(letter == '\n'){
+      buf_out[i] = '\0';
+      i = 0;
+      sendmsg();
+    }
   }
 }
 
-void sendmsg(){
-  radio.stopListening;
-  radio.write(msg, sizeof(msg));
-  radio.startListening;
-  msg[0] = '\0'
 
-}
 /* Arduino functions ---------------------------------------------------------------- */
 void setup() {
   /* Start serial monitor */
   Serial.begin(9600);
 
-  pinMode(button_pin, INPUT);
-  
   /* Radio setup */
   radio.begin();
   radio.openWritingPipe(timer_address[0]);
@@ -75,21 +50,18 @@ void setup() {
 
 }
 
-
 void loop(){
-  readSM();
+  readSP();
   if(radio.available()){
-    if(bot_name[0] == '\0'){
-      Serial.print("bot_name:");
-      radio.read(&bot_name, sizeof(bot_name));
-      Serial.println(bot_name);
+    radio.read(&buf_in, sizeof(buf_in));
+    if(buf_in[0] >= 48 && buf_in[0] <= 57){
+      Serial.print("lap_time:");
+      Serial.println(buf_in);
     }
     else{
-      radio.read(&lap_time, sizeof(lap_time));
-      Serial.print("lap_time:");
-      Serial.println(lap_time, 3);
-      bot_name[0] = '\0';
+      Serial.print("bot_name:");
+      Serial.println(buf_in);
     }
-
+    buf_in[0] = '\0';
   }
 }
