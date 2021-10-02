@@ -43,6 +43,7 @@ class TrackingUI(Page):
         back_btn.clicked.connect(
             lambda: self.openCompetitionUI(self.competition_name, self.competition_id)
         )
+        back_btn.clicked.connect(lambda: self.serial_data_handler.sendData("stop_tr"))
 
         back_btn_layout = QtWidgets.QVBoxLayout()
         back_btn_layout.setAlignment(QtCore.Qt.AlignLeft)
@@ -97,6 +98,7 @@ class TrackingUI(Page):
                 QtWidgets.QMessageBox.critical(
                     self, "Database Error", "Lap times couldn't be saved!"
                 )
+            self.serial_data_handler.sendData("stop_tr")
             self.openCompetitionUI(self.competition_name, self.competition_id)
         else:
             QtWidgets.QMessageBox.critical(self, "Error", "No lap times to save!")
@@ -146,7 +148,7 @@ class TrackingUI(Page):
 
         # Send reset signal to PC module
         # Check if PC radio module is connected
-        if not self.serial_data_handler.startNewTracking():
+        if not self.serial_data_handler.sendData("start_tr"):
             QtWidgets.QMessageBox.critical(
                 self, "Error", "Connect PC radio module into USB port!"
             )
