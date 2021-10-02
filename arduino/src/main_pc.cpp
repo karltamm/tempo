@@ -1,7 +1,7 @@
 #include <Arduino.h>
+#include <RF24.h>
 #include <SPI.h>
 #include <nRF24L01.h>
-#include <RF24.h>
 
 RF24 radio(9, 10);
 
@@ -47,7 +47,6 @@ void setup() {
   radio.openReadingPipe(1, timer_address[1]);
   radio.setPALevel(RF24_PA_MIN);
   radio.startListening();
-
 }
 
 void loop(){
