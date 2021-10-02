@@ -141,13 +141,7 @@ void loop(){
     }
     // Check if same bot on track
     if((millis() - start_time) > 3000 && start_time != 0 && !correct_bot){
-      if(bot_name[0] == '\0'){
-        strcpy(bot_name, "noName");
-        correct_bot = true;
-      }
-      else if(strcmp(bot_name, "noName") != 0){
-        resetLapTime();
-      }
+      resetLapTime();
     }
   }
 }

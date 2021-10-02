@@ -15,7 +15,7 @@
 #define min_pulse       1300
 #define max_pulse       1700
 #define standstill      1500
-#define qti_threshold   ???
+#define qti_threshold   ???   /// Input QTI threshold
 
 RF24 radio(9, 10);
 
