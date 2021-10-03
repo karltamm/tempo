@@ -106,6 +106,14 @@ class TrackingUI(Page):
     def generateLapTimesList(self):
         list_title = SectionTitle("Lap Times")
 
+        restart_lap_btn = Button("Restart Lap", id_tag="RestartLapBtn")
+        restart_lap_btn.clicked.connect(
+            lambda: self.serial_data_handler.sendData("reset_lap")
+        )
+        restart_lap_layout = QtWidgets.QHBoxLayout()
+        restart_lap_layout.addWidget(restart_lap_btn)
+        restart_lap_layout.setAlignment(QtCore.Qt.AlignLeft)
+
         self.lap_times_list_view = QtWidgets.QListView()
         self.lap_times_list_view.setObjectName("TrackingLapTimesView")
         self.lap_times_list_view.setModel(self.lap_times_list_model)
@@ -124,6 +132,7 @@ class TrackingUI(Page):
 
         self.lap_times_list = QtWidgets.QVBoxLayout()
         self.lap_times_list.addWidget(list_title)
+        self.lap_times_list.addLayout(restart_lap_layout)
         self.lap_times_list.addWidget(self.lap_times_list_view)
         self.lap_times_list.addWidget(delete_time_btn)
         self.lap_times_list.addLayout(save_btn_layout)
@@ -148,13 +157,13 @@ class TrackingUI(Page):
 
         # Send reset signal to PC module
         # Check if PC radio module is connected
-        if not self.serial_data_handler.sendData("start_tr"):
-            QtWidgets.QMessageBox.critical(
-                self, "Error", "Connect PC radio module into USB port!"
-            )
+        # if not self.serial_data_handler.sendData("start_tr"):
+        #     QtWidgets.QMessageBox.critical(
+        #         self, "Error", "Connect PC radio module into USB port!"
+        #     )
 
-            # Go back because tracking is useless without radio module
-            self.openCompetitionUI(self.competition_name, self.competition_id)
+        #     # Go back because tracking is useless without radio module
+        #     self.openCompetitionUI(self.competition_name, self.competition_id)
 
 
 class LapTimesListModel(QtCore.QAbstractListModel):
