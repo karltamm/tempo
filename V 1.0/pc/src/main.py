@@ -1,15 +1,9 @@
 from PySide6 import QtWidgets
 from os import _exit
 
-from GUI.app import MainWindow, loadFont, setFontSmooth
-from serialData import SerialDataHandler
+from GUI.app import MainWindow
+from assets import loadFont, setFontSmooth
 
-
-# Make sure that this file runs in its folder!
-# import os
-# import sys
-# file_dir_path = os.path.dirname(sys.argv[0])  # sys.argv[0] == current file path
-# os.chdir(file_dir_path)
 
 app = QtWidgets.QApplication()
 
@@ -29,5 +23,4 @@ window = MainWindow()
 app.exec()
 
 # App GUI has been closed
-
 _exit(0)  # Stop all processes (like threads)

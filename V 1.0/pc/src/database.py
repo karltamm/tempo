@@ -2,8 +2,8 @@ import sqlite3
 from sqlite3 import Error
 import time
 import math
-import os
-from pathlib import Path
+
+from assets import getDatabaseFilePath
 
 
 class CompetitionDB:
@@ -13,10 +13,7 @@ class CompetitionDB:
 
     def connect(self):
         try:
-            dir_path = Path(__file__).parent
-            db_path = os.path.join(dir_path, "../data/competitions.db")
-
-            self.con = sqlite3.connect(db_path)
+            self.con = sqlite3.connect(getDatabaseFilePath("competitions.db"))
             self.makeSureThatTablesExist()
         except Error as error:
             print(error)
