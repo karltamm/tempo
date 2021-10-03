@@ -157,13 +157,13 @@ class TrackingUI(Page):
 
         # Send reset signal to PC module
         # Check if PC radio module is connected
-        # if not self.serial_data_handler.sendData("start_tr"):
-        #     QtWidgets.QMessageBox.critical(
-        #         self, "Error", "Connect PC radio module into USB port!"
-        #     )
+        if not self.serial_data_handler.sendData("start_tr"):
+            QtWidgets.QMessageBox.critical(
+                self, "Error", "Connect PC radio module into USB port!"
+            )
 
-        #     # Go back because tracking is useless without radio module
-        #     self.openCompetitionUI(self.competition_name, self.competition_id)
+            # Go back because tracking is useless without radio module
+            self.openCompetitionUI(self.competition_name, self.competition_id)
 
 
 class LapTimesListModel(QtCore.QAbstractListModel):
