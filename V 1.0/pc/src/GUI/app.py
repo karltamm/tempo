@@ -18,7 +18,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setFixedSize(APP_WIDTH, APP_HEIGHT)
         self.setWindowTitle("Tempo")
         self.setContentsMargins(20, 30, 20, 30)
-        # self.setWindowIcon(getWindowIcon())
+        self.setWindowIcon(getWindowIcon())
 
         self.createMainPages()
         self.createPageController()

@@ -37,4 +37,4 @@ def getDatabaseFilePath(file_name):
 
 
 def getWindowIcon():
-    return QtGui.QIcon(path.join(getAssetsFolderPath(), "icon.ico"))
+    return QtGui.QIcon(path.join(getAssetsFolderPath(), "icon", "icon_ico.ico"))
