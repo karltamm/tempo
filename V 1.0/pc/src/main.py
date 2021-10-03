@@ -29,9 +29,5 @@ window = MainWindow()
 app.exec()
 
 # App GUI has been closed
-# Notify PC radio module about app exit
-serial_con = SerialDataHandler()
-serial_con.findArduinoPort()
-serial_con.sendData("stop_tr")
 
 _exit(0)  # Stop all processes (like threads)

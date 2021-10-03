@@ -52,6 +52,7 @@ class trackingAPI{
         Serial.println("Connection with timer established");
       }
       else{
+        Serial.println(radio.write(&robot_name, sizeof(robot_name)));
         Serial.println("Connection with timer failed");
       }
     }
@@ -121,5 +122,13 @@ void setup() {
 
 void loop() {
   tracking.sendName();
-}
+  /*
+  Your code here:
+  ...
+  ...
 
+  */
+
+
+
+}

@@ -19,6 +19,7 @@
 #define qti_threshold   500
 
 RF24 radio(9, 10);
+
 byte readQti(byte);
 /* Class ------------------------------------------ */
 class trackingAPI{
@@ -48,6 +49,7 @@ class trackingAPI{
       radio.begin();
       radio.openWritingPipe(timer_aadress);
       radio.stopListening();
+      delay(50);
       if(radio.write(&robot_name, sizeof(robot_name))){
         Serial.println("Connection with timer established");
       }
@@ -139,7 +141,7 @@ void setup() {
   delay(500);
 
   /* Radio test*/
-  tracking.setBotName("test1");  // Input robot name (max 20 characters)
+  tracking.setBotName("test");  // Input robot name (max 20 characters)
   tracking.radioSetup();
 }
 
@@ -147,6 +149,7 @@ void loop() {
   tracking.sendName();
   if (readQti(left_qti) && readQti(middle_qti) && readQti(right_qti)){ // All sensors on finish line
     setLed(HIGH, HIGH);
+    forward(10);
   }
   else if (!readQti(left_qti) && !readQti(right_qti)){ // Both sensors on white
     forward(10);
