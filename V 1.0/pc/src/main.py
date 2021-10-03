@@ -2,6 +2,7 @@ from PySide6 import QtWidgets
 from os import _exit
 
 from GUI.app import MainWindow, loadFont, setFontSmooth
+from serialData import SerialDataHandler
 
 
 # Make sure that this file runs in its folder!
@@ -25,7 +26,12 @@ loadFont("Roboto", "Roboto-Bold")
 setFontSmooth()
 
 window = MainWindow()
+app.exec()
 
-# 1. starts GUI
-# 2. If GUI is closed then _exit terminates the whole process
-_exit(app.exec())
+# App GUI has been closed
+# Notify PC radio module about app exit
+serial_con = SerialDataHandler()
+serial_con.findArduinoPort()
+serial_con.sendData("stop_tr")
+
+_exit(0)  # Stop all processes (like threads)

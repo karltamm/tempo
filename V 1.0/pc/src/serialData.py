@@ -5,14 +5,14 @@ import time
 
 
 class SerialDataHandler(QtCore.QRunnable):
-    def __init__(self, addTime, renameBot) -> None:
+    def __init__(self, addTime=None, renameBot=None) -> None:
         super().__init__()
 
         self.connection = None
         self.is_running = True
 
-        self.addTime = addTime
-        self.renameBot = renameBot
+        self.addTime = addTime or (lambda x: None)
+        self.renameBot = renameBot or (lambda x: None)
 
     @QtCore.Slot()
     def run(self):
@@ -34,7 +34,7 @@ class SerialDataHandler(QtCore.QRunnable):
             data_value = serial_data.split(":")[1]
 
             if data_id == "bot_name":
-                self.renameBot(data_value.strip('\r\n'))
+                self.renameBot(data_value.strip("\r\n"))
             elif data_id == "lap_time":
                 self.addTime(int(data_value))
 
@@ -54,7 +54,7 @@ class SerialDataHandler(QtCore.QRunnable):
     def sendData(self, msg):
         # Send time tracking reset signal to PC radio module (arduino) that sends signal to the TimeTracker itself
         if self.connection:
-            self.connection.write((msg + '\n').encode("ascii"))
+            self.connection.write((msg + "\n").encode("ascii"))
             return True  # Success
         else:
             return False  # No connection

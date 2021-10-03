@@ -154,6 +154,9 @@ QLineEdit {
 }
 
 /* Tracking UI */
+#RestartLapBtn {
+  margin-bottom: 10px;
+}
 
 #RobotRenameBtn {
   margin-left: 10px;
