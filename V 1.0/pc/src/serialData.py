@@ -52,7 +52,7 @@ class SerialDataHandler(QtCore.QRunnable):
         self.is_running = False
 
     def sendData(self, msg):
-        # Send time tracking reset signal to PC radio module (arduino) that sends signal to the TimeTracker itself
+        # Send signal to PC radio module (arduino) that sends signal to the TimeTracker itself
         if self.connection:
             self.connection.write((msg + "\n").encode("ascii"))
             return True  # Success
