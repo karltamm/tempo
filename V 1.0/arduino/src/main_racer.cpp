@@ -16,19 +16,66 @@
 #define min_pulse       1300
 #define max_pulse       1700
 #define standstill      1500
-#define qti_threshold   408
+#define qti_threshold   500
 
-RF24 radio(9, 10); 
+RF24 radio(9, 10);
+byte readQti(byte);
+/* Class ------------------------------------------ */
+class trackingAPI{
+  private:
+    const uint64_t timer_aadress = 0x0000000033;
+    bool msg_sent = false;
+    char robot_name[21];
 
+  public:
+    void setBotName(const char* name){
+      if(name[0] == '\0' || strcmp(name, "RobotNameHere") == 0){
+        Serial.println("Input robot name");
+        while(1);
+      }
+      else if(strlen(name) > 21){
+        Serial.println("Robot name too long");
+        while(1);
+      }
+      else{
+        strcpy(robot_name, name);
+        Serial.print("Robot name: ");
+        Serial.println(robot_name);
+      }
+    }
+
+    void radioSetup(){
+      radio.begin();
+      radio.openWritingPipe(timer_aadress);
+      radio.stopListening();
+      if(radio.write(&robot_name, sizeof(robot_name))){
+        Serial.println("Connection with timer established");
+      }
+      else{
+        Serial.println("Connection with timer failed");
+      }
+    }
+    
+    
+    void sendName(){
+      if(readQti(left_qti) && readQti(middle_qti) && readQti(right_qti)){
+        if(!msg_sent && radio.write(&robot_name, sizeof(robot_name))){ 
+          msg_sent = true;
+        }
+      }
+      else{
+        msg_sent = false;
+      }
+    }
+};
+ 
 /* Global variables ------------------------------------------ */
-const uint64_t timer_aadress = 0x0000000033;
-
 Servo g_left_wheel;
 Servo g_right_wheel;
-bool msg_sent = false;
-char robot_name[15] = "mainracer";                   // Input robot name 
+trackingAPI tracking;
 
 /* Private functions ------------------------------------------------- */
+
 byte readQti (byte qti) {                               // Function to read current position on map
   digitalWrite(qti, HIGH);                              // Send an infrared signal
   delayMicroseconds(1000);                               // Wait for 1ms, very important!
@@ -47,22 +94,6 @@ void setLed(byte value_left = LOW, byte value_right = LOW) {
   digitalWrite(left_led, value_left);
 }
 
-void radioTest(){
-  if(robot_name[0] == '\0'){
-    Serial.println("Input robot name ");
-  }
-  else{
-    if(radio.write(&robot_name, sizeof(robot_name))){
-      Serial.println("Connection with timer established");
-      Serial.print("Robot name: ");
-      Serial.println(robot_name);
-    }
-    else{
-      Serial.println("Connection with timer failed");
-    }
-  }
-}
-
 void forward(int t){
   setLed(LOW, LOW);
   setWheels(1600, 1400);
@@ -73,7 +104,7 @@ void right(int t){
   setLed(LOW, HIGH);
   setWheels(1600, 1600);
   delay(t);
-  setWheels();
+  //setWheels();
   setLed(LOW, LOW);
 }
 
@@ -81,20 +112,10 @@ void left (int t){
   setLed(HIGH, LOW);
   setWheels(1400, 1400);
   delay(t);
-  setWheels();
+  //setWheels();
   setLed(LOW, LOW);
 }
 
-void sendName(){
-  if(readQti(left_qti) && readQti(middle_qti) && readQti(right_qti)){
-    if(!msg_sent && radio.write(&robot_name, sizeof(robot_name))){ 
-      msg_sent = true;
-    }
-  }
-  else{
-    msg_sent = false;
-  }
-}
 /* Arduino functions ---------------------------------------------------------------- */
 void setup() {
   /* Start serial monitor */
@@ -117,18 +138,13 @@ void setup() {
   setLed();
   delay(500);
 
-  /* Radio setup */
-  radio.begin();
-  radio.openWritingPipe(timer_aadress);
-  radio.setPALevel(RF24_PA_MIN);
-  radio.stopListening();
-
   /* Radio test*/
-  radioTest();
+  tracking.setBotName("test1");  // Input robot name (max 20 characters)
+  tracking.radioSetup();
 }
 
 void loop() {
-  sendName();
+  tracking.sendName();
   if (readQti(left_qti) && readQti(middle_qti) && readQti(right_qti)){ // All sensors on finish line
     setLed(HIGH, HIGH);
   }

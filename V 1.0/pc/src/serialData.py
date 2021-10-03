@@ -34,7 +34,7 @@ class SerialDataHandler(QtCore.QRunnable):
             data_value = serial_data.split(":")[1]
 
             if data_id == "bot_name":
-                self.renameBot(data_value)
+                self.renameBot(data_value.strip('\r\n'))
             elif data_id == "lap_time":
                 self.addTime(int(data_value))
 
@@ -51,10 +51,10 @@ class SerialDataHandler(QtCore.QRunnable):
     def stop(self):
         self.is_running = False
 
-    def startNewTracking(self):
+    def sendData(self, msg):
         # Send time tracking reset signal to PC radio module (arduino) that sends signal to the TimeTracker itself
         if self.connection:
-            self.connection.write("reset".encode("ascii"))
+            self.connection.write((msg + '\n').encode("ascii"))
             return True  # Success
         else:
             return False  # No connection

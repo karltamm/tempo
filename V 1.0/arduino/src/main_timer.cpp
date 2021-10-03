@@ -13,14 +13,19 @@
 RF24 radio(9, 10);
 
 /* Global variables ------------------------------------------ */
-const uint64_t addresses[3] = {0xFFFFFFFF11, 0x0000000022, 0x0000000033}; //addresses(timer>PC, PC>timer, BOT>ttimer)
+const uint64_t addresses[3] = {0xFFFFFFFF11, 0x0000000022, 0x0000000033}; //addresses(timer>PC, PC>timer, BOT>timer)
 byte pipeNum=0;
 
 float g_distance_in_cm = 0;
-double lap_time;
 unsigned long start_time = 0;
 unsigned long finish_time = 0;
-char buf[15], bot_name[15];
+
+char buf[21];
+char lap_time[21], bot_name[21];
+
+bool track = false;
+bool correct_bot = false;
+bool name_sent = false;
 
 
 /* Private functions ------------------------------------------------- */
@@ -44,36 +49,48 @@ void recordingLap(bool recording = true){ //  Turn on LEDs if lap is being recor
   
 }
 
-void resetLapTime(){ //  resets lap time
+void resetLapTime(bool all = false){ //  resets lap time
   start_time = 0;
-  lap_time = 0;
-  bot_name[0] = '\0'; 
+  lap_time[0] = '\0';
+  correct_bot = false;
+  recordingLap(false);
+  if(all){
+    bot_name[0] = '\0';
+    name_sent = false;
+  }
 }
 
 void recieveMsg(){
   if(radio.available(&pipeNum)){
     radio.read(&buf, sizeof(buf));
-    if(pipeNum == 1){
-      resetLapTime();
-      recordingLap(false);
-      finish_time = 0;
+    if(pipeNum == 1){  // from pc
+      if(strcmp(buf, "start_tr") == 0){  
+        track = true;
+      }
+      else if(strcmp(buf, "stop_tr") == 0){
+        track = false;
+        resetLapTime(true);
+      }
+      else if(strcmp(buf, "reset_lap") == 0){
+        resetLapTime();
+      }
     }
-    else if(pipeNum == 2 && (millis() - start_time) < 5000 && bot_name[0] == '\0'){
-      strcpy(bot_name, buf);
+    else if(pipeNum == 2 && (millis() - start_time) < 3000){  // from robots
+      if(bot_name[0] == '\0'){
+        strcpy(bot_name, buf);
+        correct_bot = true;
+      }
+      else if(strcmp(buf, bot_name) == 0){
+        correct_bot = true;
+      }
     }
     buf[0] = '\0';
   }
 }
 
-void sendMsg(char name[15], double time){
+void sendData(const char* name){
   radio.stopListening();
-  if(name[0] == '\0'){
-    radio.write("noName", 7);
-  }
-  else{
-    radio.write(&bot_name, sizeof(bot_name));
-  }
-  radio.write(&lap_time, sizeof(lap_time));
+  radio.write(name, strlen(name)+1);
   radio.startListening();
 }
 
@@ -97,28 +114,34 @@ void setup() {
   radio.openWritingPipe(addresses[0]);     // writing pipe to PC
   radio.openReadingPipe(1, addresses[1]);  // reading pipe from PC
   radio.openReadingPipe(2, addresses[2]);  // reading pipe from robots
-  radio.setPALevel(RF24_PA_MIN);
   radio.startListening();
 }
 
 
 void loop(){
   recieveMsg();
-
-  // Lap start
-  if (distance() < 10.00 && start_time == 0 && (finish_time == 0 || (millis() - finish_time) > 5000)){
-    recordingLap();
-    start_time = millis();
-    finish_time = 0;
-  }
-
-  // Lap finish
-  if (distance() < 10.00 && (millis() - start_time) > 10000 && start_time != 0){
-    lap_time = (double)(millis() - start_time)/1000;
-    finish_time = millis();
-
-    sendMsg(bot_name, lap_time);
-    recordingLap(false);
-    resetLapTime();
+  if(track){
+    // Lap start
+    if (distance() < 10.00 && start_time == 0 && (finish_time == 0 || (millis() - finish_time) > 5000)){
+        recordingLap();
+        start_time = millis();
+        finish_time = 0;
+    }
+    // Lap finish
+    if (distance() < 10.00 && (millis() - start_time) > 10000 && start_time != 0){
+      sprintf(lap_time, "%lu", millis() - start_time);
+      finish_time = millis();
+      sendData(lap_time);
+      delay(50);
+      if(!name_sent){
+        sendData(bot_name);
+        name_sent = true;
+      }
+      resetLapTime();
+    }
+    // Check if same bot on track
+    if((millis() - start_time) > 3000 && start_time != 0 && !correct_bot){
+      resetLapTime();
+    }
   }
 }
