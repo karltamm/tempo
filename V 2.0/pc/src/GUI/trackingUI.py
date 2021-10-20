@@ -53,7 +53,7 @@ class TrackingUI(Page):
         self.header.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         self.header.addLayout(back_btn_layout)
         self.header.addWidget(page_title)
-        # self.header.addWidget(test_btn)
+        self.header.addWidget(test_btn)
 
     def generateRobotNameSection(self):
         robot_name_label = SectionTitle("Robot Name")
@@ -157,13 +157,13 @@ class TrackingUI(Page):
 
         # Send reset signal to PC module
         # Check if PC radio module is connected
-        if not self.serial_data_handler.sendData("start_tr"):
-            QtWidgets.QMessageBox.critical(
-                self, "Error", "Connect PC radio module into USB port!"
-            )
+        # if not self.serial_data_handler.sendData("start_tr"):
+        #     QtWidgets.QMessageBox.critical(
+        #         self, "Error", "Connect PC radio module into USB port!"
+        #     )
 
-            # Go back because tracking is useless without radio module
-            self.openCompetitionUI(self.competition_name, self.competition_id)
+        #     # Go back because tracking is useless without radio module
+        #     self.openCompetitionUI(self.competition_name, self.competition_id)
 
 
 class LapTimesListModel(QtCore.QAbstractListModel):

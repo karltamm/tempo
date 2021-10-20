@@ -116,40 +116,41 @@ QLineEdit {
   margin-top: 10px;
 }
 
-#LeaderboardView {
+QTableView {
   border: 0;
   padding: 10px;
 }
 
-#LeaderboardView,
-#LeaderboardView QHeaderView,
-#LeaderboardView QHeaderView::section,
-#LeaderboardView QTableCornerButton::section {
+QTableView,
+QTableView QHeaderView,
+QTableView QHeaderView::section,
+QTableView QTableCornerButton::section {
   background: #1f1f1f;
   color: #fff;
 }
-#LeaderboardView {
+QTableView {
   border-radius: 10px;
 }
 
-#LeaderboardView QHeaderView::section {
+QTableView QHeaderView::section {
   border: 0;
   padding: 0;
   margin: 0;
 }
 
-#LeaderboardView QHeaderView::section:horizontal {
+QTableView QHeaderView::section:horizontal {
   padding-right: 20px;
   padding-bottom: 10px;
   font-family: "Roboto Slab Medium";
   font-size: 22px;
 }
 
-#LeaderboardView QHeaderView::section:vertical {
+QTableView QHeaderView::section:vertical {
   width: 0;
 }
 
-#DeleteEntryBtn {
+#DeleteEntryBtn,
+#OpenRobotDataBtn {
   margin-top: 10px;
 }
 

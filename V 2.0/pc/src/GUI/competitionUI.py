@@ -3,16 +3,19 @@ from PySide6 import QtCore
 
 from .myWidgets import Page, Button, PageTitle, SectionTitle, formatTime
 
-ENTRY_ID_COL_INDEX = 3
+ENTRY_ID_COL_INDEX = 4
 
 
 class CompetitionUI(Page):
-    def __init__(self, competition_db, showCompetitionsList, openTrackingUI):
+    def __init__(
+        self, competition_db, showCompetitionsList, openTrackingUI, openRobotDataUI
+    ):
         super().__init__()
 
         self.competition_db = competition_db
         self.showCompetitionsList = showCompetitionsList
         self.openTrackingUI = openTrackingUI
+        self.openRobotDataUI = openRobotDataUI
 
         self.competition_name = ""
         self.competition_id = None
@@ -73,65 +76,48 @@ class CompetitionUI(Page):
         return self.competition_name, self.competition_id
 
     def setTableViewConfiguration(self):
-        # After competition page is (re)opened, make sure that table is displayed nicely
-
+        self.leaderboard_view.setCornerButtonEnabled(False)
+        self.leaderboard_view.setShowGrid(False)
+        self.leaderboard_view.horizontalHeader().setDefaultAlignment(
+            QtCore.Qt.AlignLeft
+        )
         self.leaderboard_view.horizontalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.Fixed
         )  # Cant resize columns
 
         self.leaderboard_view.clearSelection()
         self.leaderboard_view.setSelectionBehavior(QtWidgets.QTableView.SelectRows)
-        # self.leaderboard_view.setSelectionMode(QTableView.SingleSelection)
+        self.leaderboard_view.setSelectionMode(QtWidgets.QTableView.SingleSelection)
 
         self.leaderboard_view.setColumnHidden(ENTRY_ID_COL_INDEX, True)  # Hide entry ID
-
         self.leaderboard_view.resizeColumnsToContents()
 
     def generateLeaderboard(self):
-        delete_lap_time_btn = Button(
-            "Delete Time", id_tag="DeleteEntryBtn", class_tag="red_btn"
-        )
-        delete_lap_time_btn.clicked.connect(self.deleteEntry)
-
-        leaderboard_title = SectionTitle("Leaderboard")
+        open_robot_data_btn = Button("Open Robot Data", id_tag="OpenRobotDataBtn")
+        open_robot_data_btn.clicked.connect(self.openRobotData)
 
         self.leaderboard_model = LeaderboardTableModel(self.competition_db, self)
-        self.leaderboard_model.updateTable()
-
         self.leaderboard_view = QtWidgets.QTableView()
-        self.leaderboard_view.setCornerButtonEnabled(False)
-        self.leaderboard_view.setShowGrid(False)
-        self.leaderboard_view.horizontalHeader().setDefaultAlignment(
-            QtCore.Qt.AlignLeft
-        )
-
-        self.leaderboard_view.setObjectName("LeaderboardView")
         self.leaderboard_view.setModel(self.leaderboard_model)
-        self.setTableViewConfiguration()
 
         self.leaderboard_layout = QtWidgets.QVBoxLayout()
-        self.leaderboard_layout.addWidget(leaderboard_title)
+        self.leaderboard_layout.addWidget(SectionTitle("Leaderboard"))
         self.leaderboard_layout.addWidget(self.leaderboard_view)
-        self.leaderboard_layout.addWidget(delete_lap_time_btn)
+        self.leaderboard_layout.addWidget(open_robot_data_btn)
 
-    def deleteEntry(self):
-        selected_cells = self.leaderboard_view.selectedIndexes()
+    def openRobotData(self):
+        selected_cell = self.leaderboard_view.selectedIndexes()
 
-        for i, cell in enumerate(selected_cells):
-            if i % 2 == 0:
-                # selectedIndexes gives all selected cells. Every row has 2 cells. If user clicks on a row then both cells are automatically selected. Program only needs to use 1 cell, so "discard" every other cell
-
-                entry_row_index = cell.row()
-                self.leaderboard_model.removeEntry(entry_row_index)
-
-        self.leaderboard_model.updateTable()
-        self.setTableViewConfiguration()
+        if selected_cell:
+            row_index = selected_cell[0].row()
+            robot_name = self.leaderboard_model.getRobotNameFromRow(row_index)
+            self.openRobotDataUI(robot_name, self.competition_id)
 
 
 class LeaderboardTableModel(QtCore.QAbstractTableModel):
     def __init__(self, competition_db, parent):
         super().__init__()
-        self.table = []  # 2D array
+        self.table = [[]]  # 2D array
         self.competition_db = competition_db
         self.competition_id = None
         self.parent_widget = parent
@@ -144,12 +130,11 @@ class LeaderboardTableModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.DisplayRole:
             return self.table[index.row()][index.column()]
 
-    def removeEntry(self, entry_index):
-        entry_id = self.table[entry_index][ENTRY_ID_COL_INDEX]
-        if not self.competition_db.deleteRobotLapTime(entry_id):
-            QtWidgets.QMessageBox.critical(
-                self.parent_widget, "Database Error", "Entry couldn't be deleted!"
-            )
+        # if index.column() == 0 and role == QtCore.Qt.TextAlignmentRole:
+        #     return QtCore.Qt.AlignLeft
+
+    def getRobotNameFromRow(self, entry_index):
+        return self.table[entry_index][1]
 
     def rowCount(self, index):
         # Num of rows in this 2D array
@@ -170,6 +155,7 @@ class LeaderboardTableModel(QtCore.QAbstractTableModel):
                         placement + 1,  # + 1 because counting starts from 0
                         entry["robot_name"],
                         formatTime(entry["lap_time"]),
+                        entry["date"],
                         entry["entry_id"],
                     ]
                 )  # Add new row thats has column about entry data
@@ -187,7 +173,9 @@ class LeaderboardTableModel(QtCore.QAbstractTableModel):
                 if section == 1:
                     return "Name"
                 if section == 2:
-                    return "Lap Time"
+                    return "Best Lap"
+                if section == 3:
+                    return "Date"
 
             if orientation == QtCore.Qt.Vertical:
                 return ""  # None
