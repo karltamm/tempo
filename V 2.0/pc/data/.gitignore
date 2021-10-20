@@ -1,0 +1,5 @@
+# Include this folder to store database files
+# Don't include any files, beside this .gitignore file 
+
+* 
+!.gitignore
