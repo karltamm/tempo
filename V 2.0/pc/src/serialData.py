@@ -58,3 +58,7 @@ class SerialDataHandler(QtCore.QRunnable):
             return True  # Success
         else:
             return False  # No connection
+
+    def addCallbacks(self, addTime, renameBot):
+        self.addTime = addTime
+        self.renameBot = renameBot

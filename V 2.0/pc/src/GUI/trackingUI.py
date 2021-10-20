@@ -9,7 +9,7 @@ from serialData import SerialDataHandler
 
 
 class TrackingUI(Page):
-    def __init__(self, competition_db, openCompetitionUI):
+    def __init__(self, competition_db, openCompetitionUI, serial_data_handler):
         super().__init__()
 
         self.competition_db = competition_db
@@ -23,15 +23,13 @@ class TrackingUI(Page):
 
         self.generateLayout()
 
-        self.setupSerialDataHandler()
+        self.setupSerialDataHandler(serial_data_handler)
 
-    def setupSerialDataHandler(self):
-        self.serial_data_handler = SerialDataHandler(
+    def setupSerialDataHandler(self, serial_data_handler):
+        self.serial_data_handler = serial_data_handler
+        self.serial_data_handler.addCallbacks(
             self.lap_times_list_model.addTime, self.renameRobot
         )
-        self.threadpool = QtCore.QThreadPool()
-        # NB! if threadpool is not this class variable (no ".self") then GUI wont be displayed
-        self.threadpool.start(self.serial_data_handler)
 
     def generateHeader(self):
         page_title = PageTitle("Tracking")
@@ -53,7 +51,7 @@ class TrackingUI(Page):
         self.header.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         self.header.addLayout(back_btn_layout)
         self.header.addWidget(page_title)
-        self.header.addWidget(test_btn)
+        # self.header.addWidget(test_btn)
 
     def generateRobotNameSection(self):
         robot_name_label = SectionTitle("Robot Name")
@@ -157,13 +155,13 @@ class TrackingUI(Page):
 
         # Send reset signal to PC module
         # Check if PC radio module is connected
-        # if not self.serial_data_handler.sendData("start_tr"):
-        #     QtWidgets.QMessageBox.critical(
-        #         self, "Error", "Connect PC radio module into USB port!"
-        #     )
+        if not self.serial_data_handler.sendData("start_tr"):
+            QtWidgets.QMessageBox.critical(
+                self, "Error", "Connect PC radio module into USB port!"
+            )
 
-        #     # Go back because tracking is useless without radio module
-        #     self.openCompetitionUI(self.competition_name, self.competition_id)
+            # Go back because tracking is useless without radio module
+            self.openCompetitionUI(self.competition_name, self.competition_id)
 
 
 class LapTimesListModel(QtCore.QAbstractListModel):

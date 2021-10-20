@@ -8,10 +8,12 @@ from .robotDataUI import RobotDataUI
 
 
 class CompetitionsManager(QtWidgets.QStackedWidget):
-    def __init__(self, openMainMenu):
+    def __init__(self, openMainMenu, serial_data_handler):
         super().__init__()
 
         self.openMainMenu = openMainMenu
+        self.serial_data_handler = serial_data_handler
+
         self.competition_db = CompetitionDB()
         self.prepareUI()
 
@@ -30,7 +32,9 @@ class CompetitionsManager(QtWidgets.QStackedWidget):
             self.openTrackingUI,
             self.openRobotDataUI,
         )
-        self.tracking_UI = TrackingUI(self.competition_db, self.openCompetitionUI)
+        self.tracking_UI = TrackingUI(
+            self.competition_db, self.openCompetitionUI, self.serial_data_handler
+        )
         self.robot_data_UI = RobotDataUI(self.competition_db, self.openCompetitionUI)
 
         self.addWidget(self.competitions_list)
