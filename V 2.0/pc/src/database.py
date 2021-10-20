@@ -2,6 +2,7 @@ import sqlite3
 from sqlite3 import Error
 import time
 import math
+from datetime import datetime
 
 from assets import getDatabaseFilePath
 
@@ -143,18 +144,55 @@ class CompetitionDB:
 
         try:
             leaderboard_sql = (
-                "SELECT entry_id, robot_name, lap_time FROM comp_entries "
+                "SELECT entry_id, robot_name, MIN(lap_time), creation_time "
+                "FROM comp_entries "
                 "WHERE competition_id = ? "
+                "GROUP BY robot_name "
                 "ORDER BY lap_time ASC "
             )
+
             cursor = self.con.cursor()
             cursor.execute(leaderboard_sql, (competition_id,))
             entries = cursor.fetchall()
             for entry in entries:
+                # print(datetime.fromtimestamp(entry[3]).strftime("%d.%m.%Y"))
+                date = datetime.fromtimestamp(entry[3]).strftime("%d.%m.%Y")
                 leaderboard.append(
-                    {"entry_id": entry[0], "robot_name": entry[1], "lap_time": entry[2]}
+                    {
+                        "entry_id": entry[0],
+                        "robot_name": entry[1],
+                        "lap_time": entry[2],
+                        "date": date,
+                    }
                 )
         except Error as error:
             print(error)
 
         return leaderboard
+
+    def getRobotEntries(self, robot_name, competition_id):
+        entries = []
+
+        try:
+            entries_sql = (
+                "SELECT entry_id, lap_time, creation_time "
+                "FROM comp_entries "
+                "WHERE competition_id = ? AND robot_name = ? "
+                "ORDER BY lap_time ASC "
+            )
+
+            cursor = self.con.cursor()
+            cursor.execute(entries_sql, (competition_id, robot_name))
+            for entry in cursor.fetchall():
+                date = datetime.fromtimestamp(entry[2]).strftime("%d.%m.%Y")
+                entries.append(
+                    {
+                        "entry_id": entry[0],
+                        "lap_time": entry[1],
+                        "date": date,
+                    }
+                )
+        except Error as error:
+            print(error)
+
+        return entries
