@@ -49,6 +49,7 @@ class SerialDataHandler(QtCore.QRunnable):
                 break
 
     def stop(self):
+        self.sendData("stop_tr")
         self.is_running = False
 
     def sendData(self, msg):
