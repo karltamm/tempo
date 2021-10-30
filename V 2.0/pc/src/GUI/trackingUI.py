@@ -6,6 +6,7 @@ import random  # for testing!
 
 from .myWidgets import Page, PageTitle, Button, SectionTitle, InputDialog, formatTime
 from serialData import SerialDataHandler
+from robotNames import *
 
 
 class TrackingUI(Page):
@@ -17,9 +18,9 @@ class TrackingUI(Page):
 
         self.competition_name = None
         self.competition_id = None
-        self.lap_times_list_model = LapTimesListModel()
+        self.lap_times_list_model = TrackingModel()
 
-        self.robot_default_name = "None"
+        self.robot_name = "None"
 
         self.generateLayout()
 
@@ -51,33 +52,14 @@ class TrackingUI(Page):
         self.header.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         self.header.addLayout(back_btn_layout)
         self.header.addWidget(page_title)
-        # self.header.addWidget(test_btn)
+        self.header.addWidget(test_btn) # enabled for testing
 
-    def generateRobotNameSection(self):
-        robot_name_label = SectionTitle("Robot Name")
-
-        self.robot_name = QtWidgets.QLabel(self.robot_default_name)
-        self.robot_name.setObjectName("RobotName")
-        rename_btn = Button("Rename", id_tag="RobotRenameBtn")
-        rename_btn.clicked.connect(self.openRenameDialog)
-
-        rename_layout = QtWidgets.QHBoxLayout()
-        rename_layout.addWidget(self.robot_name)
-        rename_layout.addWidget(rename_btn)
-        rename_layout.setAlignment(QtCore.Qt.AlignLeft)
-
-        self.robot_name_layout = QtWidgets.QVBoxLayout()
-        self.robot_name_layout.addWidget(robot_name_label)
-        self.robot_name_layout.addLayout(rename_layout)
-
-    def openRenameDialog(self):
-        InputDialog("Rename Robot", parent=self, callback=self.renameRobot)
-
-    def renameRobot(self, name):
-        self.robot_name.setText(name)
+    def renameRobot(self, id):  # gets tag id as input e.g. 'B83C5E'
+        self.robot_name = getName(id)  # gets name from tag id
 
     def addDummyData(self):
-        self.lap_times_list_model.addTime(random.randrange(30000, 300000))
+        self.robot_name = (random.choice(list(id_to_name.values())))  # random robot name
+        self.lap_times_list_model.addTime(random.randrange(30000, 300000), self.robot_name) # rand lap time & name to function
 
     def deleteSelectedTimes(self):
         all_selected = self.lap_times_list_view.selectedIndexes()
@@ -86,16 +68,13 @@ class TrackingUI(Page):
             self.lap_times_list_view.clearSelection()
 
     def saveData(self):
-        robot_name = self.robot_name.text()
         lap_times = self.lap_times_list_model.lap_times
 
         if len(lap_times):
-            if not self.competition_db.addRobotLapTimes(
-                self.competition_id, robot_name, lap_times
-            ):
-                QtWidgets.QMessageBox.critical(
-                    self, "Database Error", "Lap times couldn't be saved!"
-                )
+            for entry in lap_times:
+                for robot_name, lap_time in entry.items():
+                    if not self.competition_db.addRobotLapTimes(self.competition_id, robot_name, lap_time):
+                        QtWidgets.QMessageBox.critical(self, "Database Error", "Lap times couldn't be saved!")
             self.serial_data_handler.sendData("stop_tr")
             self.openCompetitionUI(self.competition_name, self.competition_id)
         else:
@@ -137,13 +116,11 @@ class TrackingUI(Page):
 
     def generateLayout(self):
         self.generateHeader()
-        self.generateRobotNameSection()
         self.generateLapTimesList()
 
         main_layout = QtWidgets.QVBoxLayout()
         self.setLayout(main_layout)
         main_layout.addLayout(self.header)
-        main_layout.addLayout(self.robot_name_layout)
         main_layout.addLayout(self.lap_times_list)
 
     def openTracking(self, data):
@@ -151,10 +128,10 @@ class TrackingUI(Page):
 
         # Removes previously held data
         self.lap_times_list_model.lap_times = []  # Clear
-        self.robot_name.setText(self.robot_default_name)
 
         # Send reset signal to PC module
         # Check if PC radio module is connected
+        '''
         if not self.serial_data_handler.sendData("start_tr"):
             QtWidgets.QMessageBox.critical(
                 self, "Error", "Connect PC radio module into USB port!"
@@ -162,9 +139,9 @@ class TrackingUI(Page):
 
             # Go back because tracking is useless without radio module
             self.openCompetitionUI(self.competition_name, self.competition_id)
+        '''
 
-
-class LapTimesListModel(QtCore.QAbstractListModel):
+class TrackingModel(QtCore.QAbstractListModel):
     def __init__(self):
         super().__init__()
 
@@ -173,13 +150,15 @@ class LapTimesListModel(QtCore.QAbstractListModel):
     def data(self, index, role):
         if role == QtCore.Qt.DisplayRole:
             row_number = str(index.row() + 1) + ")  "
-            return row_number + formatTime(self.lap_times[index.row()])
+            for robot_name, time in self.lap_times[index.row()].items():
+                return row_number + robot_name + "  " + formatTime(time)
 
     def rowCount(self, index):
         return len(self.lap_times)
 
-    def addTime(self, time):
-        self.lap_times.append(time)
+    def addTime(self, time, robot_name):
+        new_time = {robot_name: time}
+        self.lap_times.append(new_time)
         self.layoutChanged.emit()
 
     def removeTime(self, time_index):
