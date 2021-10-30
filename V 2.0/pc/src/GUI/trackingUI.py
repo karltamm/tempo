@@ -3,7 +3,6 @@ from PySide6 import QtCore
 
 import random  # for testing!
 
-
 from .myWidgets import Page, PageTitle, Button, SectionTitle, InputDialog, formatTime
 from serialData import SerialDataHandler
 from robotNames import *
@@ -53,7 +52,7 @@ class TrackingUI(Page):
         self.header.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         self.header.addLayout(back_btn_layout)
         self.header.addWidget(page_title)
-        self.header.addWidget(test_btn) # enabled for testing
+        # self.header.addWidget(test_btn) # enable for testing
 
     def renameRobot(self, id):  # gets tag id as input e.g. 'B83C5E'
         self.robot_name = getName(id)  # gets name from tag id
@@ -73,8 +72,6 @@ class TrackingUI(Page):
                 self.tracking_model.removeTime(tracking_row_index)
 
         self.tracking_model.updateTable()
-        
-            
 
     def saveData(self):
         lap_times = self.tracking_model.lap_times
@@ -159,7 +156,6 @@ class TrackingUI(Page):
 
         # Send reset signal to PC module
         # Check if PC radio module is connected
-        '''
         if not self.serial_data_handler.sendData("start_tr"):
             QtWidgets.QMessageBox.critical(
                 self, "Error", "Connect PC radio module into USB port!"
@@ -167,7 +163,6 @@ class TrackingUI(Page):
 
             # Go back because tracking is useless without radio module
             self.openCompetitionUI(self.competition_name, self.competition_id)
-        '''
 
 class TrackingModel(QtCore.QAbstractTableModel):
     def __init__(self):
