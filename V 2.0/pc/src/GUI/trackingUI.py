@@ -132,7 +132,7 @@ class TrackingUI(Page):
 
         self.tracking = QtWidgets.QVBoxLayout()
         self.tracking.addWidget(list_title)
-        self.tracking.addLayout(restart_lap_layout)
+        # self.tracking.addLayout(restart_lap_layout)
         self.tracking.addWidget(self.tracking_view)
         self.tracking.addWidget(delete_time_btn)
         self.tracking.addLayout(save_btn_layout)
