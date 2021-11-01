@@ -102,7 +102,7 @@ class CompetitionDB:
             print(error)
             return None
 
-    def addRobotLapTimes(self, competition_id, robot_name, lap_times):
+    def addRobotLapTimes(self, competition_id, robot_name, lap_time):
         try:
             entry_sql = (
                 "INSERT INTO comp_entries(competition_id,robot_name,lap_time,creation_time)"
@@ -112,16 +112,16 @@ class CompetitionDB:
             cursor = self.con.cursor()
             creation_time = math.floor(time.time())
 
-            for lap_time in lap_times:
-                cursor.execute(
-                    entry_sql,
-                    (
-                        competition_id,
-                        robot_name,
-                        lap_time,
-                        creation_time,
-                    ),
-                )
+        
+            cursor.execute(
+                entry_sql,
+                (
+                    competition_id,
+                    robot_name,
+                    lap_time,
+                    creation_time,
+                ),
+            )
 
             self.con.commit()
             return True  # Entry was added successfully
