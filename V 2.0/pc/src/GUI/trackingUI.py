@@ -1,17 +1,20 @@
 from PySide6 import QtWidgets
-from PySide6 import QtCore
+from PySide6 import QtCore, QtGui
 
 import random  # for testing!
 
 from .myWidgets import Page, PageTitle, Button, SectionTitle, InputDialog, formatTime
 from serialData import SerialDataHandler
 from robotNames import *
+from timer import Timer
 
-ENTRY_ID_COL_INDEX = 3
+ENTRY_ID_COL_INDEX = 4
 
 class TrackingUI(Page):
     def __init__(self, competition_db, openCompetitionUI, serial_data_handler):
         super().__init__()
+        
+        # self.index = 0 # for testing
 
         self.competition_db = competition_db
         self.openCompetitionUI = openCompetitionUI
@@ -55,18 +58,21 @@ class TrackingUI(Page):
         # self.header.addWidget(test_btn) # enable for testing
 
     def renameRobot(self, id):  # gets tag id as input e.g. 'B83C5E'
-        self.robot_name = getName(id)  # gets name from tag id
+        self.tracking_model.addTime(getName(id))    # gets name from tag id
+                                                    # and inputs into tracking
 
     def addDummyData(self):
-        self.robot_name = (random.choice(list(id_to_name.values())))  # random robot name
-        self.tracking_model.addTime(random.randrange(30000, 300000), self.robot_name) # rand lap time & name to function
+        robots = ["R4", "R6", "R11", "R6", "R6", "R4", "R6", "R11"]
+        self.tracking_model.addTime(robots[self.index])
+        self.index += 1
 
     def deleteSelectedTimes(self):
         selected_cells = self.tracking_view.selectedIndexes()
 
         for i, cell in enumerate(selected_cells):
             if i % ENTRY_ID_COL_INDEX == 0:  # "- 1" because counting starts from 0
-                # selectedIndexes gives all selected cells. If user clicks on a row then all row cells are automatically selected. Program only needs to use 1 cell, so "discard" every other cell
+                # selectedIndexes gives all selected cells. If user clicks on a row then all row cells are automatically selected. 
+                # Program only needs to use 1 cell, so "discard" every other cell
 
                 tracking_row_index = cell.row()
                 self.tracking_model.removeTime(tracking_row_index)
@@ -74,7 +80,7 @@ class TrackingUI(Page):
         self.tracking_model.updateTable()
 
     def saveData(self):
-        lap_times = self.tracking_model.lap_times
+        lap_times = self.tracking_model.lap_times_to_save
 
         if len(lap_times):
             for entry in lap_times:
@@ -152,6 +158,8 @@ class TrackingUI(Page):
 
         # Removes previously held data
         self.tracking_model.lap_times = []  # Clear
+        self.tracking_model.lap_times_to_save = []
+        self.tracking_model.racing_robots = {}
         self.tracking_model.table = []
 
         # Send reset signal to PC module
@@ -167,50 +175,129 @@ class TrackingUI(Page):
 class TrackingModel(QtCore.QAbstractTableModel):
     def __init__(self):
         super().__init__()
-        self.table = [[]]  # 2D array
-        self.lap_times = []
+        self.checkmark = QtGui.QIcon(QtGui.QPixmap(f"GUI/icons/checkmark.png"))
         
+        self.table = [[]]  # 2D array
+        
+        # all results to show in table
+        self.lap_times = []  # [{name1: time, ..}]
+        # only finished results
+        self.lap_times_to_save = []  # [{'name1': finish_time, ..}]
+        # currently racing robots
+        self.racing_robots = {}  # {'name1': index, ..}
+        
+        self.threadpool = QtCore.QThreadPool()
+
+    # draw to 2D array (self.table)
     def data(self, index, role):
+        # decorationrole to draw checkmark
+        if role == QtCore.Qt.DecorationRole:
+            if index.column() == 3:
+                return self.table[index.row()][index.column()]
+        # displayrole to draw text
         if role == QtCore.Qt.DisplayRole:
             return self.table[index.row()][index.column()]
-                
-    def addTime(self, time, robot_name):
-        new_time = {robot_name: time}
-        self.lap_times.append(new_time)
-        self.updateTable()
-        self.layoutChanged.emit()
-
-    def removeTime(self, time_index):
-        del self.lap_times[time_index]
-        self.updateTable()
-        self.layoutChanged.emit()
-        
+    
+    # Num of rows in 2D array
     def rowCount(self, index):
-        # Num of rows in this 2D array
         return len(self.table)
 
+    # Num of columns in first row (all rows have same length)
     def columnCount(self, index):
-        # Num of columns in first row (all rows have same length)
         return len(self.table[0])
+                
+    # work with robot_name detected from tag-id
+    def addTime(self, robot_name):        
+        if robot_name not in self.racing_robots:    # check if robot is already racing
             
+            self.lap_times.append({robot_name: 0})  # if robot not racing, add new entry
+            self.updateTable()
+            
+            index = len(self.lap_times) - 1         # get index # of newly racing robot
+            self.racing_robots[robot_name] = index  # add to racing_robots dict
+            
+            # starts thread if not running
+            if(len(self.racing_robots) == 1):
+                self.timer = Timer(self.updateTimer)
+                self.threadpool.start(self.timer)
+                
+            self.timer.inputData(robot_name, index) # input data to thread
+
+        else:                                       # if robot was already racing
+            # add finished robot to lap_times_to_save
+            index = self.racing_robots.get(robot_name)
+            finish_time = self.lap_times[self.racing_robots.get(robot_name)].get(robot_name)
+            self.lap_times_to_save.append({robot_name: finish_time})
+            # stop timer for robot_name
+            self.stopTimer(robot_name)
+    
+    # stop timer for robot_name
+    def stopTimer(self, robot_name):
+        self.racing_robots.pop(robot_name)      # remove from currently racing robots
+        self.timer.stopCount(robot_name)        # stop counting time
+            
+        # stop thread from working if no racing robots
+        if(len(self.racing_robots) == 0):
+            self.timer.stop()
+
+    # delete highlighted row
+    def removeTime(self, selected_index):
+        # if selected_index is currently racing, stop its timer
+        if selected_index in self.racing_robots.values():
+            robot_name = list(self.lap_times[selected_index].keys())[0]
+            self.stopTimer(robot_name)
+        # if time was already ready to be saved
+        elif self.lap_times[selected_index] in self.lap_times_to_save:
+            for i, val in enumerate(self.lap_times_to_save):
+                if val == self.lap_times[selected_index]:
+                    del self.lap_times_to_save[i]
+        # delete row and fix other indexes
+        del self.lap_times[selected_index]
+        self.fixIndexes(selected_index) 
+        self.updateTable()
+        
+    # fix all indexes if a row gets deleted
+    def fixIndexes(self, start_index):
+        for key, value in self.racing_robots.items():
+            if value > start_index:
+                self.racing_robots[key] = value - 1
+        self.timer.fixIndexes(start_index)
+    
+    # update information showed in table
     def updateTable(self):
         self.table = []
+        finished_rows = []
+        
+        for i, lap_time in enumerate(self.lap_times):
+            if lap_time in self.lap_times_to_save:
+                finished_rows.append(i)
         
         if self.lap_times:
             for index, entry in enumerate(self.lap_times):
                 for robot_name, lap_time in entry.items():
                     self.table.append(
-                        [
-                            index + 1,
-                            robot_name,
-                            formatTime(lap_time),
-                        ]
-                    )
+                            [
+                                index + 1,
+                                robot_name,
+                                formatTime(lap_time),
+                                " "
+                            ]
+                        )
+                    if index in finished_rows:
+                        self.table[index][3] = self.checkmark
+
         else:
             self.table.append([])  # Add at least one row with column, otherwise error
 
         self.layoutChanged.emit()  # Notify table view about data change
     
+    # update counting time to show in table
+    def updateTimer(self, robots_dict, index_list):
+        for index, key in zip(index_list, robots_dict):
+            self.lap_times[index][key] = robots_dict[key]
+        self.updateTable()
+
+    # table header titles
     def headerData(self, section, orientation, role):
         # section is the index of the column/row.
         if role == QtCore.Qt.DisplayRole:
@@ -221,6 +308,8 @@ class TrackingModel(QtCore.QAbstractTableModel):
                     return "Name"
                 if section == 2:
                     return "Time"
+                if section == 3:
+                    return "Done"
 
             if orientation == QtCore.Qt.Vertical:
                 return ""  # None
