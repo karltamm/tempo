@@ -31,9 +31,7 @@ class TrackingUI(Page):
 
     def setupSerialDataHandler(self, serial_data_handler):
         self.serial_data_handler = serial_data_handler
-        self.serial_data_handler.addCallbacks(
-            self.tracking_model.addTime, self.renameRobot
-        )
+        self.serial_data_handler.addCallbacks(self.translateID)
 
     def generateHeader(self):
         page_title = PageTitle("Tracking")
@@ -57,14 +55,16 @@ class TrackingUI(Page):
         self.header.addWidget(page_title)
         # self.header.addWidget(test_btn) # enable for testing
 
-    def renameRobot(self, id):  # gets tag id as input e.g. 'B83C5E'
-        self.tracking_model.addTime(getName(id))    # gets name from tag id
-                                                    # and inputs into tracking
+    def translateID(self, id):
+        self.tracking_model.inputData(getName(id))  # e.g. 'B83C5E' to 'R1'
+                                                    # and outputs into TrackingModel
 
     def addDummyData(self):
         robots = ["R4", "R6", "R11", "R6", "R6", "R4", "R6", "R11"]
-        self.tracking_model.addTime(robots[self.index])
+        self.tracking_model.inputData(robots[self.index])
         self.index += 1
+        if self.index == len(robots):
+            self.index = 0
 
     def deleteSelectedTimes(self):
         selected_cells = self.tracking_view.selectedIndexes()
@@ -80,10 +80,10 @@ class TrackingUI(Page):
         self.tracking_model.updateTable()
 
     def saveData(self):
-        lap_times = self.tracking_model.lap_times_to_save
+        results = self.tracking_model.results_to_save
 
-        if len(lap_times):
-            for entry in lap_times:
+        if len(results):
+            for entry in results:
                 for robot_name, lap_time in entry.items():
                     if not self.competition_db.addRobotLapTimes(self.competition_id, robot_name, lap_time):
                         QtWidgets.QMessageBox.critical(self, "Database Error", "Lap times couldn't be saved!")
@@ -157,8 +157,8 @@ class TrackingUI(Page):
         self.competition_name, self.competition_id = data
 
         # Removes previously held data
-        self.tracking_model.lap_times = []  # Clear
-        self.tracking_model.lap_times_to_save = []
+        self.tracking_model.results = []  # Clear
+        self.tracking_model.results_to_save = []
         self.tracking_model.racing_robots = {}
         self.tracking_model.table = []
 
@@ -180,9 +180,9 @@ class TrackingModel(QtCore.QAbstractTableModel):
         self.table = [[]]  # 2D array
         
         # all results to show in table
-        self.lap_times = []  # [{name1: time, ..}]
+        self.results = []  # [{name1: time, ..}]
         # only finished results
-        self.lap_times_to_save = []  # [{'name1': finish_time, ..}]
+        self.results_to_save = []  # [{'name1': finish_time, ..}]
         # currently racing robots
         self.racing_robots = {}  # {'name1': index, ..}
         
@@ -207,13 +207,13 @@ class TrackingModel(QtCore.QAbstractTableModel):
         return len(self.table[0])
                 
     # work with robot_name detected from tag-id
-    def addTime(self, robot_name):        
+    def inputData(self, robot_name):        
         if robot_name not in self.racing_robots:    # check if robot is already racing
             
-            self.lap_times.append({robot_name: 0})  # if robot not racing, add new entry
+            self.results.append({robot_name: 0})  # if robot not racing, add new entry
             self.updateTable()
             
-            index = len(self.lap_times) - 1         # get index # of newly racing robot
+            index = len(self.results) - 1         # get index # of newly racing robot
             self.racing_robots[robot_name] = index  # add to racing_robots dict
             
             # starts thread if not running
@@ -224,10 +224,10 @@ class TrackingModel(QtCore.QAbstractTableModel):
             self.timer.inputData(robot_name, index) # input data to thread
 
         else:                                       # if robot was already racing
-            # add finished robot to lap_times_to_save
+            # add finished robot to results_to_save
             index = self.racing_robots.get(robot_name)
-            finish_time = self.lap_times[self.racing_robots.get(robot_name)].get(robot_name)
-            self.lap_times_to_save.append({robot_name: finish_time})
+            finish_time = self.results[self.racing_robots.get(robot_name)].get(robot_name)
+            self.results_to_save.append({robot_name: finish_time})
             # stop timer for robot_name
             self.stopTimer(robot_name)
     
@@ -244,15 +244,15 @@ class TrackingModel(QtCore.QAbstractTableModel):
     def removeTime(self, selected_index):
         # if selected_index is currently racing, stop its timer
         if selected_index in self.racing_robots.values():
-            robot_name = list(self.lap_times[selected_index].keys())[0]
+            robot_name = list(self.results[selected_index].keys())[0]
             self.stopTimer(robot_name)
         # if time was already ready to be saved
-        elif self.lap_times[selected_index] in self.lap_times_to_save:
-            for i, val in enumerate(self.lap_times_to_save):
-                if val == self.lap_times[selected_index]:
-                    del self.lap_times_to_save[i]
+        elif self.results[selected_index] in self.results_to_save:
+            for i, val in enumerate(self.results_to_save):
+                if val == self.results[selected_index]:
+                    del self.results_to_save[i]
         # delete row and fix other indexes
-        del self.lap_times[selected_index]
+        del self.results[selected_index]
         self.fixIndexes(selected_index) 
         self.updateTable()
         
@@ -268,12 +268,12 @@ class TrackingModel(QtCore.QAbstractTableModel):
         self.table = []
         finished_rows = []
         
-        for i, lap_time in enumerate(self.lap_times):
-            if lap_time in self.lap_times_to_save:
+        for i, lap_time in enumerate(self.results):
+            if lap_time in self.results_to_save:
                 finished_rows.append(i)
         
-        if self.lap_times:
-            for index, entry in enumerate(self.lap_times):
+        if self.results:
+            for index, entry in enumerate(self.results):
                 for robot_name, lap_time in entry.items():
                     self.table.append(
                             [
@@ -294,7 +294,7 @@ class TrackingModel(QtCore.QAbstractTableModel):
     # update counting time to show in table
     def updateTimer(self, robots_dict, index_list):
         for index, key in zip(index_list, robots_dict):
-            self.lap_times[index][key] = robots_dict[key]
+            self.results[index][key] = robots_dict[key]
         self.updateTable()
 
     # table header titles
