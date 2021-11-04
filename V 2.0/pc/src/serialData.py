@@ -5,14 +5,13 @@ import time
 
 
 class SerialDataHandler(QtCore.QRunnable):
-    def __init__(self, addTime=None, renameBot=None) -> None:
+    def __init__(self, translateID=None) -> None:
         super().__init__()
 
         self.connection = None
         self.is_running = True
-
-        self.addTime = addTime or (lambda x: None)
-        self.renameBot = renameBot or (lambda x: None)
+        
+        self.translateID = translateID or (lambda x: None)
 
     @QtCore.Slot()
     def run(self):
@@ -34,9 +33,7 @@ class SerialDataHandler(QtCore.QRunnable):
             data_value = serial_data.split(":")[1]
 
             if data_id == "bot_name":
-                self.renameBot(data_value.strip("\r\n"))
-            elif data_id == "lap_time":
-                self.addTime(int(data_value))
+                self.translateID(data_value.strip("\r\n"))
 
     def findArduinoPort(self):
         connected_ports = serial.tools.list_ports.comports()
@@ -60,6 +57,5 @@ class SerialDataHandler(QtCore.QRunnable):
         else:
             return False  # No connection
 
-    def addCallbacks(self, addTime, renameBot):
-        self.addTime = addTime
-        self.renameBot = renameBot
+    def addCallbacks(self, translateID):
+        self.translateID = translateID
