@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-RF24 Radio(9, 10);
+RF24 Radio(6, 7);
 
 class RadioCon{
   private:
@@ -14,7 +14,7 @@ class RadioCon{
     char* ptr;
   
   public:
-    void RadioSetup(){
+    void RadioSetup(){  // Radio connection setup
       Radio.begin();
       Radio.openWritingPipe(timer_address[0]);
       Radio.openReadingPipe(1, timer_address[1]);
@@ -22,43 +22,46 @@ class RadioCon{
       Radio.startListening();
     }
 
-    void listenRadio(){
+    void listenRadio(){  
       Radio.read(&buf, sizeof(buf));
       ptr = strtok(buf, " ");
       Serial.print("Bot_name:");
       Serial.println(ptr);
       
       ptr = strtok(NULL, " ");
-      Serial.print("Lap_time:");
+      Serial.print("Time:");
       Serial.println(ptr);
+      buf[0] = '\0';
     }
 
      void sendmsg(char* msg){
       Radio.stopListening();
-      Radio.write(msg, strlen(msg)+1);
+      if(Radio.write(msg, strlen(msg)+1)){
+        Serial.println("Success");  //delivery confirmation
+      }
       Radio.startListening();
-      buf[0] = '\0';
     }
 };
 
 class SerialCon{
   private:
     int i = 0;
-    char letter;
-    char ser_buf[21];
-
+    char character;
+    
   public:
+    char buf[21];
+    
     char* readSP(){
       while(1){
-        letter = Serial.read();
-        if(letter != '\n' && letter > 0){
-          ser_buf[i] = letter;
+        character = Serial.read();
+        if(character != '\n' && character > 0){
+          buf[i] = character;
           i++;
         }
-        else if(letter == '\n'){
-          ser_buf[i] = '\0';
+        else if(character == '\n'){
+          buf[i] = '\0';
           i = 0;
-          return ser_buf;
+          return buf;
         }
       }
       return 0;
@@ -69,17 +72,14 @@ RadioCon Rad;
 SerialCon Ser;
 
 void setup() {
-
   Serial.begin(9600);
-
 
   Rad.RadioSetup();
 }
 
 void loop(){
   if(Serial.available()){
-    //Serial.println(Ser.readSP());
-    //Rad.sendmsg(Ser.readSP());
+    Rad.sendmsg(Ser.readSP());
   }
   if(Radio.available()){
     Rad.listenRadio();
