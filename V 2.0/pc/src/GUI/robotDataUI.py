@@ -151,7 +151,7 @@ class EntriesModel(QtCore.QAbstractTableModel):
                 if section == 0:
                     return "#"
                 if section == 1:
-                    return "Lap Time"
+                    return "Time"
                 if section == 2:
                     return "Date"
 
