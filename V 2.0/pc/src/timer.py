@@ -59,5 +59,9 @@ class Timer(QtCore.QRunnable):
 
     # stop running thread
     def stop(self):
+        self.robot_name = None
+        self.index = None
+        self.racing_robots = {}
+        self.index_list = []
         self.running = False
 

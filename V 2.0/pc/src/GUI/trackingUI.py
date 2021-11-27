@@ -11,8 +11,9 @@ from timer import Timer
 ENTRY_ID_COL_INDEX = 4
 
 class TrackingUI(Page):
-    def __init__(self, competition_db, openCompetitionUI, serial_data_handler):
+    def __init__(self, competition_db, openCompetitionUI, serial_data_handler, practice=False):
         super().__init__()
+        self.practice = practice
         
         # self.index = 0 # for testing
 
@@ -34,16 +35,25 @@ class TrackingUI(Page):
         self.serial_data_handler.addCallbacks(self.translateID)
 
     def generateHeader(self):
-        page_title = PageTitle("Tracking")
+        if not self.practice:
+            page_title = PageTitle("Tracking")
+        else:
+            page_title = PageTitle("Practice Mode")
+            
 
         test_btn = QtWidgets.QPushButton("Add Laps")
         test_btn.clicked.connect(self.addDummyData)
 
         back_btn = Button("Back", class_tag="red_btn")
-        back_btn.clicked.connect(
-            lambda: self.openCompetitionUI(self.competition_name, self.competition_id)
-        )
+        if not self.practice:
+            back_btn.clicked.connect(
+                lambda: self.openCompetitionUI(self.competition_name, self.competition_id)
+            )
+        else:
+            back_btn.clicked.connect(self.openCompetitionUI) # open MainMenu
+            
         back_btn.clicked.connect(lambda: self.serial_data_handler.sendData("stop_tr"))
+        back_btn.clicked.connect(lambda: self.tracking_model.clearTimer())
 
         back_btn_layout = QtWidgets.QVBoxLayout()
         back_btn_layout.setAlignment(QtCore.Qt.AlignLeft)
@@ -88,6 +98,7 @@ class TrackingUI(Page):
                     if not self.competition_db.addRobotLapTimes(self.competition_id, robot_name, lap_time):
                         QtWidgets.QMessageBox.critical(self, "Database Error", "Lap times couldn't be saved!")
             self.serial_data_handler.sendData("stop_tr")
+            self.tracking_model.clearTimer()
             self.openCompetitionUI(self.competition_name, self.competition_id)
         else:
             QtWidgets.QMessageBox.critical(self, "Error", "No lap times to save!")
@@ -141,7 +152,8 @@ class TrackingUI(Page):
         # self.tracking.addLayout(restart_lap_layout)
         self.tracking.addWidget(self.tracking_view)
         self.tracking.addWidget(delete_time_btn)
-        self.tracking.addLayout(save_btn_layout)
+        if not self.practice:
+            self.tracking.addLayout(save_btn_layout)
 
     def generateLayout(self):
         self.generateHeader()
@@ -170,7 +182,10 @@ class TrackingUI(Page):
             )
 
             # Go back because tracking is useless without radio module
-            self.openCompetitionUI(self.competition_name, self.competition_id)
+            if not self.practice:
+                self.openCompetitionUI(self.competition_name, self.competition_id)
+            else:
+                self.openCompetitionUI() # open main menu
 
 class TrackingModel(QtCore.QAbstractTableModel):
     def __init__(self):
@@ -178,6 +193,8 @@ class TrackingModel(QtCore.QAbstractTableModel):
         self.checkmark = QtGui.QIcon(QtGui.QPixmap(f"GUI/icons/checkmark.png"))
         
         self.table = [[]]  # 2D array
+        
+        self.timer_running = False # if timer tracking robots is on
         
         # all results to show in table
         self.results = []  # [{name1: time, ..}]
@@ -220,6 +237,7 @@ class TrackingModel(QtCore.QAbstractTableModel):
             if(len(self.racing_robots) == 1):
                 self.timer = Timer(self.updateTimer)
                 self.threadpool.start(self.timer)
+                self.timer_running = True
                 
             self.timer.inputData(robot_name, index) # input data to thread
 
@@ -239,6 +257,7 @@ class TrackingModel(QtCore.QAbstractTableModel):
         # stop thread from working if no racing robots
         if(len(self.racing_robots) == 0):
             self.timer.stop()
+            self.timer_running = False
 
     # delete highlighted row
     def removeTime(self, selected_index):
@@ -296,6 +315,11 @@ class TrackingModel(QtCore.QAbstractTableModel):
         for index, key in zip(index_list, robots_dict):
             self.results[index][key] = robots_dict[key]
         self.updateTable()
+        
+    def clearTimer(self):
+        if self.timer_running:
+            self.timer.stop()
+            self.timer_running = False
 
     # table header titles
     def headerData(self, section, orientation, role):
