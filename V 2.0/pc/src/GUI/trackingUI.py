@@ -70,8 +70,8 @@ class TrackingUI(Page):
                                                     # and outputs into TrackingModel
 
     def addDummyData(self):
-        robots = ["R4", "R6", "R11", "R6", "R6", "R4", "R6", "R11"]
-        self.tracking_model.inputData(robots[self.index])
+        robots = ['B83C5E', 'B82A56', '965FC2', 'B8A72A', 'B85958', 'B81B6D']
+        self.translateID(robots[self.index])
         self.index += 1
         if self.index == len(robots):
             self.index = 0
