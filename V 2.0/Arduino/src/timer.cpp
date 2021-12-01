@@ -16,7 +16,7 @@ uint32_t buf_time;
 uint32_t buf_name;
 bool tracking = false;
 
-class RadioCon{
+class RadioConnection{
   private:
     const uint64_t pc_address[2] = {0xFFFFFFFF11, 0x0000000022}; //addresses(timer>PC, PC>timer)
     char buf[21];
@@ -54,7 +54,7 @@ class RadioCon{
 	}
 };
 
-RadioCon rad;
+RadioConnection rad;
 
 void setup()
 {
@@ -75,9 +75,10 @@ void loop(){
 	}
 	if (rdm6300.update()){
 		buf_name = rdm6300.get_tag_id();
-		if(tracking && millis() - buf_time > 3000){
+		if(millis() - buf_time > 3000){
 			buf_time = millis();  // Record detection time
 			rad.sendData(buf_name, buf_time);
+			Serial.println(buf_name, HEX);
 		}
 		buf_name = 0;
 	}

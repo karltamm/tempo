@@ -7,7 +7,7 @@
 
 RF24 Radio(6, 7);
 
-class RadioCon{
+class RadioConnection{
   private:
     const uint64_t timer_address[2] = {0x0000000022, 0xFFFFFFFF11};
     char buf[21];
@@ -25,11 +25,11 @@ class RadioCon{
     void listenRadio(){  
       Radio.read(&buf, sizeof(buf));
       ptr = strtok(buf, " ");
-      Serial.print("Bot_name:");
+      Serial.print("bot_name:");
       Serial.println(ptr);
       
       ptr = strtok(NULL, " ");
-      Serial.print("Time:");
+      Serial.print("time:");
       Serial.println(ptr);
       buf[0] = '\0';
     }
@@ -43,7 +43,7 @@ class RadioCon{
     }
 };
 
-class SerialCon{
+class SerialConnection{
   private:
     int i = 0;
     char character;
@@ -68,8 +68,8 @@ class SerialCon{
     }
 };
 
-RadioCon Rad;
-SerialCon Ser;
+RadioConnection Rad;
+SerialConnection Ser;
 
 void setup() {
   Serial.begin(9600);
