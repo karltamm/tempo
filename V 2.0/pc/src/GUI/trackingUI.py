@@ -65,13 +65,14 @@ class TrackingUI(Page):
         self.header.addWidget(page_title)
         # self.header.addWidget(test_btn) # enable for testing
 
-    def translateID(self, id):
-        self.tracking_model.inputData(getName(id))  # e.g. 'B83C5E' to 'R1'
-                                                    # and outputs into TrackingModel
+    def translateID(self, id, time):
+        self.tracking_model.inputData(getName(id), time)  # e.g. 'B83C5E' to 'R1'
+                                                    # and outputs name, time into TrackingModel
 
     def addDummyData(self):
-        robots = ['B83C5E', 'B82A56', '965FC2', 'B8A72A', 'B85958', 'B81B6D']
-        self.translateID(robots[self.index])
+        robots = [['B83C5E', 0], ['B82A56', 0], ['965FC2', 0], ['B8A72A', 0], ['B85958', 0], ['B81B6D', 0],
+                  ['B83C5E', 10000], ['B82A56', 20000], ['965FC2', 30000], ['B8A72A', 40000], ['B85958', 25000], ['B81B6D', 32567]]
+        self.translateID(robots[self.index][0], robots[self.index][1])
         self.index += 1
         if self.index == len(robots):
             self.index = 0
@@ -86,6 +87,7 @@ class TrackingUI(Page):
 
                 tracking_row_index = cell.row()
                 self.tracking_model.removeTime(tracking_row_index)
+                self.tracking_view.clearSelection() # Clear selection after deleting a table entry
 
         self.tracking_model.updateTable()
 
@@ -224,7 +226,7 @@ class TrackingModel(QtCore.QAbstractTableModel):
         return len(self.table[0])
                 
     # work with robot_name detected from tag-id
-    def inputData(self, robot_name):        
+    def inputData(self, robot_name, time_ms):        
         if robot_name not in self.racing_robots:    # check if robot is already racing
             
             self.results_to_table.append({robot_name: 0})  # if robot not racing, add new entry
@@ -244,7 +246,11 @@ class TrackingModel(QtCore.QAbstractTableModel):
         else:                                       # if robot was already racing
             # add finished robot to results_to_save
             index = self.racing_robots.get(robot_name)
-            finish_time = self.results_to_table[self.racing_robots.get(robot_name)].get(robot_name)
+            if time_ms != 0:
+                # Replace finished time with time from pc-module
+                self.results_to_table[index][robot_name] = time_ms
+
+            finish_time = self.results_to_table[index].get(robot_name)
             self.results_to_save.append({robot_name: finish_time})
             # stop timer for robot_name
             self.stopTimer(robot_name)
