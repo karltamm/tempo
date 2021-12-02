@@ -171,7 +171,7 @@ class TrackingUI(Page):
         self.competition_name, self.competition_id = data
 
         # Removes previously held data
-        self.tracking_model.results = []  # Clear
+        self.tracking_model.results_to_table = []  # Clear
         self.tracking_model.results_to_save = []
         self.tracking_model.racing_robots = {}
         self.tracking_model.table = []
