@@ -5,7 +5,7 @@ from .myWidgets import Page, Button
 
 
 class MainMenu(Page):
-    def __init__(self, openCompetionsManager):
+    def __init__(self, openCompetitionsManager, openPractice):
         super().__init__()
 
         # Header
@@ -22,7 +22,10 @@ class MainMenu(Page):
         # Menu options
 
         competition_btn = Button("Competitions", "OpenCompetitions")
-        competition_btn.clicked.connect(openCompetionsManager)
+        competition_btn.clicked.connect(openCompetitionsManager)
+        
+        practice_btn = Button("Practice", "ExitApp") #ExitApp means margin-top:5px;
+        practice_btn.clicked.connect(openPractice)
 
         exit_btn = Button("Exit", "ExitApp", class_tag="red_btn")
         exit_btn.clicked.connect(QtWidgets.QApplication.instance().quit)
@@ -30,6 +33,7 @@ class MainMenu(Page):
         menu_options = QtWidgets.QVBoxLayout()
         menu_options.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         menu_options.addWidget(competition_btn)
+        menu_options.addWidget(practice_btn)
         menu_options.addWidget(exit_btn)
 
         # Main layout
