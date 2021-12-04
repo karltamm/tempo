@@ -4,6 +4,7 @@ from PySide6 import QtCore, QtGui
 import random  # for testing!
 
 from .myWidgets import Page, PageTitle, Button, SectionTitle, InputDialog, formatTime
+from assets import getCheckmarkIcon
 from serialData import SerialDataHandler
 from robotNames import *
 from timer import Timer
@@ -192,7 +193,7 @@ class TrackingUI(Page):
 class TrackingModel(QtCore.QAbstractTableModel):
     def __init__(self):
         super().__init__()
-        self.checkmark = QtGui.QIcon(QtGui.QPixmap(f"GUI/icons/checkmark.png"))
+        self.checkmark = getCheckmarkIcon()
         
         self.table = [[]]  # 2D array
         
