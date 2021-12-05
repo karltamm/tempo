@@ -26,7 +26,8 @@ class RadioConnection{
       Radio.begin();
       Radio.openWritingPipe(pc_address[0]);
       Radio.openReadingPipe(1, pc_address[1]);
-      Radio.setPALevel(RF24_PA_MIN);
+      Radio.setPALevel(RF24_PA_LOW);
+	  Radio.setRetries(3, 5);
       Radio.startListening();
     }
 
@@ -46,8 +47,9 @@ class RadioConnection{
 		char msg[21], buf[10];
 		sprintf(msg, "%lX", name);
 		sprintf(buf, "%lu", time);
-		strcat(msg, " ");
+		strcat(msg, ":");
 		strcat(msg, buf);
+		Serial.println(msg);
     	Radio.stopListening();
     	Radio.write(msg, strlen(msg)+1);
     	Radio.startListening();
@@ -78,7 +80,6 @@ void loop(){
 		if(millis() - buf_time > 3000){
 			buf_time = millis();  // Record detection time
 			rad.sendData(buf_name, buf_time);
-			Serial.println(buf_name, HEX);
 		}
 		buf_name = 0;
 	}
