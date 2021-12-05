@@ -28,12 +28,12 @@ class SerialDataHandler(QtCore.QRunnable):
         serial_data = str(self.connection.readline().decode("ascii"))
 
         if ":" in serial_data:
-            # Gets type of data before ":", E.g. gets "bot_name" from "bot_name:name"
-            data_id = serial_data.split(":")[0]
-            data_value = serial_data.split(":")[1]
+            # E.g. Gets bot_id = "B81B6D", time_ms = "123456" from "B81B6D:123456"
+            # And forwards data to tracker
+            bot_id = serial_data.split(":")[0].strip("\r\n")
+            time_ms = serial_data.split(":")[1].strip("\r\n")
 
-            if data_id == "bot_name":
-                self.translateID(data_value.strip("\r\n"))
+            self.translateID(bot_id, int(time_ms))
 
     def findArduinoPort(self):
         connected_ports = serial.tools.list_ports.comports()
@@ -52,14 +52,7 @@ class SerialDataHandler(QtCore.QRunnable):
     def sendData(self, msg):
         # Send signal to PC radio module (arduino) that sends signal to the TimeTracker itself
         if self.connection:
-            
-            serial_data = "" 
-            # Send signal to module until module verifies signal by responding with "Success"
-            while(serial_data.strip("\r\n") != "Success"):
-                self.connection.write((msg + "\n").encode("ascii"))
-                time.sleep(1)
-                serial_data = str(self.connection.readline().decode("ascii"))
-                
+            self.connection.write((msg + "\n").encode("ascii"))
             return True  # Success
         else:
             return False  # No connection

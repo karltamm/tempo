@@ -2,6 +2,7 @@ from PySide6 import QtWidgets, QtCore
 
 from .mainMenu import MainMenu
 from .competitionsManager import CompetitionsManager
+from .trackingUI import TrackingUI
 from assets import getStylesheetPath, getWindowIcon
 from serialData import SerialDataHandler
 
@@ -35,20 +36,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.threadpool.start(self.serial_data_handler)
 
     def createMainPages(self):
-        self.main_menu = MainMenu(self.openCompetionsManager)
+        self.main_menu = MainMenu(self.openCompetionsManager, self.openPractice)
         self.competitions_manager = CompetitionsManager(
             self.openMainMenu, self.serial_data_handler
+        )
+        self.tracking_UI = TrackingUI(
+            "practice", self.openMainMenu, self.serial_data_handler, practice=True
         )
 
     def createPageController(self):
         self.cur_page = QtWidgets.QStackedWidget()
         self.cur_page.addWidget(self.main_menu)  # opened by default
         self.cur_page.addWidget(self.competitions_manager)
+        self.cur_page.addWidget(self.tracking_UI)
         self.setCentralWidget(self.cur_page)
 
     def openCompetionsManager(self):
         self.cur_page.setCurrentWidget(self.competitions_manager)
         self.competitions_manager.openCompetitionsList()
+        
+    def openPractice(self):
+        self.cur_page.setCurrentWidget(self.tracking_UI)
+        self.tracking_UI.openTracking(("Practice", 0))
 
     def openMainMenu(self):
         self.cur_page.setCurrentWidget(self.main_menu)

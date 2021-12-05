@@ -38,3 +38,6 @@ def getDatabaseFilePath(file_name):
 
 def getWindowIcon():
     return QtGui.QIcon(path.join(getAssetsFolderPath(), "icon", "icon_ico.ico"))
+
+def getCheckmarkIcon():
+    return QtGui.QIcon(QtGui.QPixmap(path.join(getAssetsFolderPath(), "icon", "checkmark.png")))

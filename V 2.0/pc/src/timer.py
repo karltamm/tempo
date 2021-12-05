@@ -1,5 +1,5 @@
 from PySide6 import QtCore
-from time import sleep
+from time import sleep, time
 
 # count-up timer to run in a thread
 class Timer(QtCore.QRunnable):
@@ -13,14 +13,14 @@ class Timer(QtCore.QRunnable):
         self.index = None
 
         # for tracking robots with timer running
-        self.racing_robots = {}  # {"name1": time, ..}
+        self.racing_robots = {} # {"name1": [time, start_time], ..}
         self.index_list = []     # [i1, i2, i3, ..]
 
     @QtCore.Slot()
     # main thread loop
     def run(self):
         while self.running:
-            # countTime every 0.01 seconds
+            # Update times every 0.01 seconds
             sleep(0.01)
             self.countTime(self.robot_name, self.index)
     
@@ -28,11 +28,13 @@ class Timer(QtCore.QRunnable):
     def countTime(self, robot_name=None, index=None):
         if robot_name is not None:
             if robot_name not in self.racing_robots:
-                self.racing_robots[robot_name] = 0  # start count from 0
-                self.robot_name = None      
+                # add new robot to dict if not already racing
+                self.racing_robots[robot_name] = [0, time()] # start time count from 0, get start_time
+                self.robot_name = None
 
         for key in self.racing_robots:
-            self.racing_robots[key] += 10 # add 10ms (0.01s) to time with every loop
+            start_time = self.racing_robots[key][1]
+            self.racing_robots[key][0] = (time()-start_time) * 1000 # elapsed time in ms
 
         if index is not None:
             self.index_list.append(index)
@@ -59,5 +61,9 @@ class Timer(QtCore.QRunnable):
 
     # stop running thread
     def stop(self):
+        self.robot_name = None
+        self.index = None
+        self.racing_robots = {}
+        self.index_list = []
         self.running = False
 
