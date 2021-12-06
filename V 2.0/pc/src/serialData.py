@@ -10,6 +10,8 @@ class SerialDataHandler(QtCore.QRunnable):
 
         self.connection = None
         self.is_running = True
+        self.timer_connection = False
+
         
         self.translateID = translateID or (lambda x: None)
 
@@ -34,6 +36,10 @@ class SerialDataHandler(QtCore.QRunnable):
             time_ms = serial_data.split(":")[1].strip("\r\n")
 
             self.translateID(bot_id, int(time_ms))
+
+        if "Success" in serial_data:  # Timer connection confirmation
+            self.timer_connection = True
+
 
     def findArduinoPort(self):
         connected_ports = serial.tools.list_ports.comports()

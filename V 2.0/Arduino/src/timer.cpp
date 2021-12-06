@@ -75,9 +75,9 @@ void loop(){
 	if(Radio.available()){
 		rad.recieveMsg();
 	}
-	if (rdm6300.update()){
+	if (tracking && rdm6300.update()){
 		buf_name = rdm6300.get_tag_id();
-		if(millis() - buf_time > 3000){
+		if(millis() - buf_time > 2000 ){
 			buf_time = millis();  // Record detection time
 			rad.sendData(buf_name, buf_time);
 		}
