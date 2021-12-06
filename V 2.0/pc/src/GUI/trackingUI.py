@@ -33,7 +33,10 @@ class TrackingUI(Page):
 
     def setupSerialDataHandler(self, serial_data_handler):
         self.serial_data_handler = serial_data_handler
-        self.serial_data_handler.addCallbacks(self.translateID)
+        if not self.practice:
+            self.serial_data_handler.addCallbacks(self.translateID, False)
+        else:
+            self.serial_data_handler.addCallbacks(self.translateID, True)
 
     def generateHeader(self):
         if not self.practice:
@@ -176,6 +179,13 @@ class TrackingUI(Page):
         self.tracking_model.results_to_save = []
         self.tracking_model.racing_robots = {}
         self.tracking_model.table = []
+        
+        # Program makes 2 instances of TrackingUI (competition, practice) ..?
+        # Choose which one data from PC-module is inserted into
+        if self.practice:
+            self.serial_data_handler.practiceEnable(True)
+        else:
+            self.serial_data_handler.practiceEnable(False)
 
         # Send reset signal to PC module
         # Check if PC radio module is connected
