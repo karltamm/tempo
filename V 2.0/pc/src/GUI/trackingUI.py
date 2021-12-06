@@ -204,7 +204,7 @@ class TrackingModel(QtCore.QAbstractTableModel):
         # only finished results
         self.results_to_save = []  # [{'name1': finish_time, ..}]
         # currently racing robots
-        self.racing_robots = {}  # {'name1': index, ..}
+        self.racing_robots = {}  # {'name1': [index, start_time(from arduino)] ..}
         
         self.threadpool = QtCore.QThreadPool()
 
@@ -234,7 +234,7 @@ class TrackingModel(QtCore.QAbstractTableModel):
             self.updateTable()
             
             index = len(self.results_to_table) - 1         # get index # of newly racing robot
-            self.racing_robots[robot_name] = index  # add to racing_robots dict
+            self.racing_robots[robot_name] = [index, time_ms]  # add to racing_robots dict
             
             # starts thread if not running
             if(len(self.racing_robots) == 1):
@@ -246,13 +246,14 @@ class TrackingModel(QtCore.QAbstractTableModel):
 
         else:                                       # if robot was already racing
             # add finished robot to results_to_save
-            index = self.racing_robots.get(robot_name)
-            if time_ms != 0:
-                # Replace finished time with time from pc-module
-                self.results_to_table[index][robot_name] = time_ms
+            index = self.racing_robots.get(robot_name)[0]
+            start_time = self.racing_robots.get(robot_name)[1]
 
+            # Replace finished time with time from pc-module
+            self.results_to_table[index][robot_name] = time_ms - start_time # calculate finish time with finish_time-start_time from arduino
             finish_time = self.results_to_table[index].get(robot_name)
             self.results_to_save.append({robot_name: finish_time})
+            
             # stop timer for robot_name
             self.stopTimer(robot_name)
     
@@ -269,14 +270,17 @@ class TrackingModel(QtCore.QAbstractTableModel):
     # delete highlighted row
     def removeTime(self, selected_index):
         # if selected_index is currently racing, stop its timer
-        if selected_index in self.racing_robots.values():
-            robot_name = list(self.results_to_table[selected_index].keys())[0]
-            self.stopTimer(robot_name)
+        for values in self.racing_robots.values():
+            if values[0] == selected_index:
+                robot_name = list(self.results_to_table[selected_index].keys())[0]
+                self.stopTimer(robot_name)
+                break
         # if time was already ready to be saved
-        elif self.results_to_table[selected_index] in self.results_to_save:
-            for i, val in enumerate(self.results_to_save):
-                if val == self.results_to_table[selected_index]:
-                    del self.results_to_save[i]
+        else:
+            if self.results_to_table[selected_index] in self.results_to_save:
+                for i, val in enumerate(self.results_to_save):
+                    if val == self.results_to_table[selected_index]:
+                        del self.results_to_save[i]
         # delete row and fix other indexes
         del self.results_to_table[selected_index]
         self.fixIndexes(selected_index) 
@@ -285,8 +289,8 @@ class TrackingModel(QtCore.QAbstractTableModel):
     # fix all indexes if a row gets deleted
     def fixIndexes(self, start_index):
         for key, value in self.racing_robots.items():
-            if value > start_index:
-                self.racing_robots[key] = value - 1
+            if value[0] > start_index:
+                self.racing_robots[key][0] = value[0] - 1
         self.timer.fixIndexes(start_index)
     
     # update information showed in table
