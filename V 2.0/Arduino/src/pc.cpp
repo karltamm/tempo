@@ -14,30 +14,29 @@ class RadioConnection{
     char* ptr;
   
   public:
-    void RadioSetup(){  // Radio connection setup
+    void RadioSetup(){
       Radio.begin();
       Radio.openWritingPipe(timer_address[0]);
       Radio.openReadingPipe(1, timer_address[1]);
-      Radio.setPALevel(RF24_PA_MIN);
+      Radio.setPALevel(RF24_PA_LOW);  // Set amp level to -12dBm
+      Radio.setRetries(5, 15);  // Set 15 retries with a delay of 1.5ms
+      Radio.setDataRate(RF24_250KBPS);  // Set speed to 250 kbps to improve range
+      Radio.setChannel(108);  // At 2.508 Ghz to limit interference from wifi channels
       Radio.startListening();
     }
 
-    void listenRadio(){  
+    void listenRadio(){
       Radio.read(&buf, sizeof(buf));
-      ptr = strtok(buf, " ");
-      Serial.print("bot_name:");
-      Serial.println(ptr);
-      
-      ptr = strtok(NULL, " ");
-      Serial.print("time:");
-      Serial.println(ptr);
+      Serial.println(buf);
       buf[0] = '\0';
     }
 
-     void sendmsg(char* msg){
+    void sendmsg(char* msg){
       Radio.stopListening();
       if(Radio.write(msg, strlen(msg)+1)){
-        Serial.println("Success");  //delivery confirmation
+        if(strcmp(msg, "start_tr") == 0){
+          Serial.println("Success");  // To verify the connection with timer
+        }
       }
       Radio.startListening();
     }
@@ -48,6 +47,7 @@ class SerialConnection{
     int i = 0;
     char character;
     
+
   public:
     char buf[21];
     
@@ -78,9 +78,11 @@ void setup() {
 }
 
 void loop(){
+  // Read messages from serial and send them to timer
   if(Serial.available()){
     Rad.sendmsg(Ser.readSP());
   }
+  // Get messages from timer and write them to serial
   if(Radio.available()){
     Rad.listenRadio();
   }

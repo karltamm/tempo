@@ -23,12 +23,14 @@ class RadioConnection{
   
   public:
     void RadioSetup(){
-      Radio.begin();
-      Radio.openWritingPipe(pc_address[0]);
-      Radio.openReadingPipe(1, pc_address[1]);
-      Radio.setPALevel(RF24_PA_LOW);
-	  Radio.setRetries(3, 5);
-      Radio.startListening();
+      	Radio.begin();
+    	Radio.openWritingPipe(pc_address[0]);
+      	Radio.openReadingPipe(1, pc_address[1]);
+	  	Radio.setPALevel(RF24_PA_LOW);  // Set amp level to -12dBm
+      	Radio.setRetries(5, 15);  // Set 15 retries with a delay of 1.5ms
+     	Radio.setDataRate(RF24_250KBPS);  // Set speed to 250 kbps to improve range
+      	Radio.setChannel(108);  // At 2.508 Ghz to limit interference from wifi channels
+      	Radio.startListening();
     }
 
    	void recieveMsg(){
