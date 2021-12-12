@@ -1,5 +1,6 @@
 from PySide6 import QtWidgets
 from PySide6 import QtCore, QtGui
+from time import sleep
 
 import random  # for testing!
 
@@ -199,6 +200,23 @@ class TrackingUI(Page):
                 self.openCompetitionUI(self.competition_name, self.competition_id)
             else:
                 self.openCompetitionUI() # open main menu
+
+        # Check the connection with timer
+        else:
+            sleep(0.2)  # Delay for the confirmation
+            if not self.serial_data_handler.timer_connection:
+                QtWidgets.QMessageBox.critical(
+                self, "Error", "Connection with timer failed!\n" \
+                                "Check that the timer is turned on\n" \
+                                "and try moving the PC radio module."
+                )
+                # Go back because tracking is useless without radio module
+                if not self.practice:
+                    self.openCompetitionUI(self.competition_name, self.competition_id)
+                else:
+                    self.openCompetitionUI() # open main menu
+        self.serial_data_handler.timer_connection = False
+
 
 class TrackingModel(QtCore.QAbstractTableModel):
     def __init__(self):

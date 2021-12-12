@@ -5,9 +5,9 @@
 #include <string.h>
 
 
-RF24 Radio(9, 10);
+RF24 Radio(6, 7);
 
-class RadioCon{
+class RadioConnection{
   private:
     const uint64_t timer_address[2] = {0x0000000022, 0xFFFFFFFF11};
     char buf[21];
@@ -18,69 +18,71 @@ class RadioCon{
       Radio.begin();
       Radio.openWritingPipe(timer_address[0]);
       Radio.openReadingPipe(1, timer_address[1]);
-      Radio.setPALevel(RF24_PA_MIN);
+      Radio.setPALevel(RF24_PA_HIGH);  // Set power amplification to high
+      Radio.setRetries(5, 15);  // Set 15 retries with a delay of 1.5ms
+      Radio.setDataRate(RF24_250KBPS);  // Set speed to 250 kbps to improve range
+      Radio.setChannel(108);  // At 2.508 Ghz to limit interference from wifi channels
       Radio.startListening();
     }
 
     void listenRadio(){
       Radio.read(&buf, sizeof(buf));
-      ptr = strtok(buf, " ");
-      Serial.print("Bot_name:");
-      Serial.println(ptr);
-      
-      ptr = strtok(NULL, " ");
-      Serial.print("Lap_time:");
-      Serial.println(ptr);
+      Serial.println(buf);
+      buf[0] = '\0';
     }
 
-     void sendmsg(char* msg){
+    void sendmsg(char* msg){
       Radio.stopListening();
-      Radio.write(msg, strlen(msg)+1);
+      if(Radio.write(msg, strlen(msg)+1)){
+        if(strcmp(msg, "start_tr") == 0){
+          Serial.println("Success");  // To verify the connection with timer
+        }
+      }
       Radio.startListening();
-      buf[0] = '\0';
     }
 };
 
-class SerialCon{
+class SerialConnection{
   private:
     int i = 0;
-    char letter;
-    char ser_buf[21];
+    char character;
+    
 
   public:
+    char buf[21];
+    
     char* readSP(){
       while(1){
-        letter = Serial.read();
-        if(letter != '\n' && letter > 0){
-          ser_buf[i] = letter;
+        character = Serial.read();
+        if(character != '\n' && character > 0){
+          buf[i] = character;
           i++;
         }
-        else if(letter == '\n'){
-          ser_buf[i] = '\0';
+        else if(character == '\n'){
+          buf[i] = '\0';
           i = 0;
-          return ser_buf;
+          return buf;
         }
       }
       return 0;
     }
 };
 
-RadioCon Rad;
-SerialCon Ser;
+RadioConnection Rad;
+SerialConnection Ser;
 
 void setup() {
-
   Serial.begin(9600);
-
 
   Rad.RadioSetup();
 }
 
 void loop(){
+  // Read messages from serial and send them to timer
   if(Serial.available()){
-    //Serial.println(Ser.readSP());
-    //Rad.sendmsg(Ser.readSP());
+    Rad.sendmsg(Ser.readSP());
   }
+  // Get messages from timer and write them to serial
   if(Radio.available()){
     Rad.listenRadio();
   }
