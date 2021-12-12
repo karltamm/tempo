@@ -12,6 +12,9 @@ class SerialDataHandler(QtCore.QRunnable):
         self.is_running = True
         
         self.translateID = translateID or (lambda x: None)
+        self.translateID_practice = translateID or (lambda x: None)
+        
+        self.practice = False
 
     @QtCore.Slot()
     def run(self):
@@ -33,7 +36,10 @@ class SerialDataHandler(QtCore.QRunnable):
             bot_id = serial_data.split(":")[0].strip("\r\n")
             time_ms = serial_data.split(":")[1].strip("\r\n")
 
-            self.translateID(bot_id, int(time_ms))
+            if not self.practice:
+                self.translateID(bot_id, int(time_ms))
+            else:
+                self.translateID_practice(bot_id, int(time_ms))
 
     def findArduinoPort(self):
         connected_ports = serial.tools.list_ports.comports()
@@ -57,5 +63,14 @@ class SerialDataHandler(QtCore.QRunnable):
         else:
             return False  # No connection
 
-    def addCallbacks(self, translateID):
-        self.translateID = translateID
+    def addCallbacks(self, translateID, practice):
+        if practice:
+            self.translateID_practice = translateID
+        else:
+            self.translateID = translateID
+            
+    def practiceEnable(self, input):
+        if input:
+            self.practice = True
+        else:
+            self.practice = False
