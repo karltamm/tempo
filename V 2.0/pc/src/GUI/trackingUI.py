@@ -75,10 +75,8 @@ class TrackingUI(Page):
                                                     # and outputs name, time into TrackingModel
 
     def addDummyData(self):
-        robots = [['B83C5E', 0], ['B82A56', 0],
-                  ['B83C5E', 10000], ['B82A56', 20000],
-                  ['B83C5E', 20000], ['B82A56', 30000]]
-                 
+        robots = [['B83C5E', 0], ['B82A56', 0], ['965FC2', 0], ['B8A72A', 0], ['B85958', 0], ['B81B6D', 0],
+                  ['B83C5E', 10000], ['B82A56', 20000], ['965FC2', 30000], ['B8A72A', 40000], ['B85958', 25000], ['B81B6D', 32567]]
         self.translateID(robots[self.index][0], robots[self.index][1])
         self.index += 1
         if self.index == len(robots):
@@ -286,9 +284,6 @@ class TrackingModel(QtCore.QAbstractTableModel):
             
             # stop timer for robot_name
             self.stopTimer(robot_name)
-            
-            # starts timer again after finish
-            self.inputData(robot_name, time_ms)
     
     # stop timer for robot_name
     def stopTimer(self, robot_name):
