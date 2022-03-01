@@ -52,6 +52,21 @@ def clearLayout(layout):
                 child.widget().deleteLater()
 
 
+class MyTableView(QtWidgets.QTableView):
+    def __init__(self):
+        super().__init__()
+
+        self.scroll_dir = 0
+
+    def wheelEvent(self, event):
+        super().wheelEvent(event)
+
+        if event.angleDelta().y() > 0:
+            self.scroll_dir = -1  # Scrolling up
+        else:
+            self.scroll_dir = 1  # Scrolling down
+
+
 class MyWidget(QtWidgets.QWidget):
     def __init__(self, id_tag=None, parent=None):
         super().__init__(parent)

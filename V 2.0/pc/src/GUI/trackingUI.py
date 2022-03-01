@@ -2,9 +2,18 @@ from PySide6 import QtWidgets
 from PySide6 import QtCore, QtGui
 from time import sleep
 
+
 import random  # for testing!
 
-from .myWidgets import Page, PageTitle, Button, SectionTitle, InputDialog, formatTime
+from .myWidgets import (
+    Page,
+    PageTitle,
+    Button,
+    SectionTitle,
+    InputDialog,
+    formatTime,
+    MyTableView,
+)
 from assets import getCheckmarkIcon
 from serialData import SerialDataHandler
 from robotNames import *
@@ -12,12 +21,15 @@ from timer import Timer
 
 ENTRY_ID_COL_INDEX = 4
 
+
 class TrackingUI(Page):
-    def __init__(self, competition_db, openCompetitionUI, serial_data_handler, practice=False):
+    def __init__(
+        self, competition_db, openCompetitionUI, serial_data_handler, practice=False
+    ):
         super().__init__()
         self.practice = practice
-        
-        # self.index = 0 # for testing
+
+        self.index = 0  # for testing
 
         self.competition_db = competition_db
         self.openCompetitionUI = openCompetitionUI
@@ -27,6 +39,8 @@ class TrackingUI(Page):
         self.tracking_model = TrackingModel()
 
         self.robot_name = "None"
+
+        self.autoscroll = True
 
         self.generateLayout()
 
@@ -44,7 +58,6 @@ class TrackingUI(Page):
             page_title = PageTitle("Tracking")
         else:
             page_title = PageTitle("Practice Mode")
-            
 
         test_btn = QtWidgets.QPushButton("Add Laps")
         test_btn.clicked.connect(self.addDummyData)
@@ -52,11 +65,13 @@ class TrackingUI(Page):
         back_btn = Button("Back", class_tag="red_btn")
         if not self.practice:
             back_btn.clicked.connect(
-                lambda: self.openCompetitionUI(self.competition_name, self.competition_id)
+                lambda: self.openCompetitionUI(
+                    self.competition_name, self.competition_id
+                )
             )
         else:
-            back_btn.clicked.connect(self.openCompetitionUI) # open MainMenu
-            
+            back_btn.clicked.connect(self.openCompetitionUI)  # open MainMenu
+
         back_btn.clicked.connect(lambda: self.serial_data_handler.sendData("stop_tr"))
         back_btn.clicked.connect(lambda: self.tracking_model.clearTimer())
 
@@ -68,17 +83,22 @@ class TrackingUI(Page):
         self.header.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         self.header.addLayout(back_btn_layout)
         self.header.addWidget(page_title)
-        # self.header.addWidget(test_btn) # enable for testing
+        # self.header.addWidget(test_btn)  # enable for testing
 
     def translateID(self, id, time):
         self.tracking_model.inputData(getName(id), time)  # e.g. 'B83C5E' to 'R1'
-                                                    # and outputs name, time into TrackingModel
+        # and outputs name, time into TrackingModel
 
     def addDummyData(self):
-        robots = [['B83C5E', 0], ['B82A56', 0],
-                  ['B83C5E', 10000], ['B82A56', 20000],
-                  ['B83C5E', 20000], ['B82A56', 30000]]
-                 
+        robots = [
+            ["B83C5E", 0],
+            ["B82A56", 0],
+            ["B83C5E", 10000],
+            ["B82A56", 20000],
+            ["B83C5E", 20000],
+            ["B82A56", 30000],
+        ]
+
         self.translateID(robots[self.index][0], robots[self.index][1])
         self.index += 1
         if self.index == len(robots):
@@ -89,12 +109,12 @@ class TrackingUI(Page):
 
         for i, cell in enumerate(selected_cells):
             if i % ENTRY_ID_COL_INDEX == 0:  # "- 1" because counting starts from 0
-                # selectedIndexes gives all selected cells. If user clicks on a row then all row cells are automatically selected. 
+                # selectedIndexes gives all selected cells. If user clicks on a row then all row cells are automatically selected.
                 # Program only needs to use 1 cell, so "discard" every other cell
 
                 tracking_row_index = cell.row()
                 self.tracking_model.removeTime(tracking_row_index)
-                self.tracking_view.clearSelection() # Clear selection after deleting a table entry
+                self.tracking_view.clearSelection()  # Clear selection after deleting a table entry
 
         self.tracking_model.updateTable()
 
@@ -104,8 +124,12 @@ class TrackingUI(Page):
         if len(results):
             for entry in results:
                 for robot_name, lap_time in entry.items():
-                    if not self.competition_db.addRobotLapTimes(self.competition_id, robot_name, lap_time):
-                        QtWidgets.QMessageBox.critical(self, "Database Error", "Lap times couldn't be saved!")
+                    if not self.competition_db.addRobotLapTimes(
+                        self.competition_id, robot_name, lap_time
+                    ):
+                        QtWidgets.QMessageBox.critical(
+                            self, "Database Error", "Lap times couldn't be saved!"
+                        )
             self.serial_data_handler.sendData("stop_tr")
             self.tracking_model.clearTimer()
             self.openCompetitionUI(self.competition_name, self.competition_id)
@@ -115,9 +139,7 @@ class TrackingUI(Page):
     def setTableViewConfiguration(self):
         self.tracking_view.setCornerButtonEnabled(False)
         self.tracking_view.setShowGrid(False)
-        self.tracking_view.horizontalHeader().setDefaultAlignment(
-            QtCore.Qt.AlignLeft
-        )
+        self.tracking_view.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft)
         self.tracking_view.horizontalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.Fixed
         )  # Cant resize columns
@@ -128,7 +150,7 @@ class TrackingUI(Page):
 
         self.tracking_view.setColumnHidden(ENTRY_ID_COL_INDEX, True)  # Hide entry ID
         self.tracking_view.resizeColumnsToContents()
-    
+
     def generateLapTimesList(self):
         list_title = SectionTitle("Lap Times")
 
@@ -140,9 +162,10 @@ class TrackingUI(Page):
         restart_lap_layout.addWidget(restart_lap_btn)
         restart_lap_layout.setAlignment(QtCore.Qt.AlignLeft)
 
-        self.tracking_view = QtWidgets.QTableView()
+        self.tracking_view = MyTableView()
         self.tracking_view.setObjectName("TrackingLapTimesView")
         self.tracking_view.setModel(self.tracking_model)
+        self.tracking_model.addTableView(self.tracking_view)
 
         delete_time_btn = Button(
             "Delete Time", id_tag="DeleteLapTimeBtn", class_tag="red_btn"
@@ -182,7 +205,7 @@ class TrackingUI(Page):
         self.tracking_model.results_to_save = []
         self.tracking_model.racing_robots = {}
         self.tracking_model.table = []
-        
+
         # Program makes 2 instances of TrackingUI (competition, practice) ..?
         # Choose which one data from PC-module is inserted into
         if self.practice:
@@ -201,22 +224,24 @@ class TrackingUI(Page):
             if not self.practice:
                 self.openCompetitionUI(self.competition_name, self.competition_id)
             else:
-                self.openCompetitionUI() # open main menu
+                self.openCompetitionUI()  # open main menu
 
         # Check the connection with timer
         else:
             sleep(0.2)  # Delay for the confirmation
             if not self.serial_data_handler.timer_connection:
                 QtWidgets.QMessageBox.critical(
-                self, "Error", "Connection with timer failed!\n" \
-                                "Check that the timer is turned on\n" \
-                                "and try moving the PC radio module."
+                    self,
+                    "Error",
+                    "Connection with timer failed!\n"
+                    "Check that the timer is turned on\n"
+                    "and try moving the PC radio module.",
                 )
                 # Go back because tracking is useless without radio module
                 if not self.practice:
                     self.openCompetitionUI(self.competition_name, self.competition_id)
                 else:
-                    self.openCompetitionUI() # open main menu
+                    self.openCompetitionUI()  # open main menu
         self.serial_data_handler.timer_connection = False
 
 
@@ -224,19 +249,34 @@ class TrackingModel(QtCore.QAbstractTableModel):
     def __init__(self):
         super().__init__()
         self.checkmark = getCheckmarkIcon()
-        
+
         self.table = [[]]  # 2D array
-        
-        self.timer_running = False # if timer tracking robots is on
-        
+
+        # For autoscroll
+        self.table_view = None  # Must be added with callback
+        self.autoscroll = True
+
+        self.timer_running = False  # if timer tracking robots is on
+
         # all results to show in table (counting+finished)
         self.results_to_table = []  # [{name1: time, ..}]
         # only finished results
         self.results_to_save = []  # [{'name1': finish_time, ..}]
         # currently racing robots
         self.racing_robots = {}  # {'name1': [index, start_time(from arduino)] ..}
-        
+
         self.threadpool = QtCore.QThreadPool()
+
+    def addTableView(self, table_view):
+        self.table_view = table_view
+
+    def autoScroll(self):
+        if self.table_view.scroll_dir != 0:
+            self.table_view.scroll_dir = 0  # After read, default
+            self.autoscroll = False
+
+        if self.table_view and self.autoscroll:
+            self.table_view.scrollToBottom()
 
     # draw to 2D array (self.table)
     def data(self, index, role):
@@ -247,7 +287,7 @@ class TrackingModel(QtCore.QAbstractTableModel):
         # displayrole to draw text
         if role == QtCore.Qt.DisplayRole:
             return self.table[index.row()][index.column()]
-    
+
     # Num of rows in 2D array
     def rowCount(self, index):
         return len(self.table)
@@ -255,48 +295,57 @@ class TrackingModel(QtCore.QAbstractTableModel):
     # Num of columns in first row (all rows have same length)
     def columnCount(self, index):
         return len(self.table[0])
-                
+
     # work with robot_name detected from tag-id
-    def inputData(self, robot_name, time_ms):        
-        if robot_name not in self.racing_robots:    # check if robot is already racing
-            
-            self.results_to_table.append({robot_name: 0})  # if robot not racing, add new entry
+    def inputData(self, robot_name, time_ms):
+        self.autoscroll = True
+        print("inputData")
+
+        if robot_name not in self.racing_robots:  # check if robot is already racing
+            self.results_to_table.append(
+                {robot_name: 0}
+            )  # if robot not racing, add new entry
             self.updateTable()
-            
-            index = len(self.results_to_table) - 1         # get index # of newly racing robot
-            self.racing_robots[robot_name] = [index, time_ms]  # add to racing_robots dict
-            
+
+            index = len(self.results_to_table) - 1  # get index # of newly racing robot
+            self.racing_robots[robot_name] = [
+                index,
+                time_ms,
+            ]  # add to racing_robots dict
+
             # starts thread if not running
-            if(len(self.racing_robots) == 1):
+            if len(self.racing_robots) == 1:
                 self.timer = Timer(self.updateTimer)
                 self.threadpool.start(self.timer)
                 self.timer_running = True
-                
-            self.timer.inputData(robot_name, index) # input data to thread
 
-        else:                                       # if robot was already racing
+            self.timer.inputData(robot_name, index)  # input data to thread
+
+        else:  # if robot was already racing
             # add finished robot to results_to_save
             index = self.racing_robots.get(robot_name)[0]
             start_time = self.racing_robots.get(robot_name)[1]
 
             # Replace finished time with time from pc-module
-            self.results_to_table[index][robot_name] = time_ms - start_time # calculate finish time with finish_time-start_time from arduino
+            self.results_to_table[index][robot_name] = (
+                time_ms - start_time
+            )  # calculate finish time with finish_time-start_time from arduino
             finish_time = self.results_to_table[index].get(robot_name)
             self.results_to_save.append({robot_name: finish_time})
-            
+
             # stop timer for robot_name
             self.stopTimer(robot_name)
-            
+
             # starts timer again after finish
             self.inputData(robot_name, time_ms)
-    
+
     # stop timer for robot_name
     def stopTimer(self, robot_name):
-        self.racing_robots.pop(robot_name)      # remove from currently racing robots
-        self.timer.stopCount(robot_name)        # stop counting time
-            
+        self.racing_robots.pop(robot_name)  # remove from currently racing robots
+        self.timer.stopCount(robot_name)  # stop counting time
+
         # stop thread from working if no racing robots
-        if(len(self.racing_robots) == 0):
+        if len(self.racing_robots) == 0:
             self.timer.stop()
             self.timer_running = False
 
@@ -316,36 +365,31 @@ class TrackingModel(QtCore.QAbstractTableModel):
                         del self.results_to_save[i]
         # delete row and fix other indexes
         del self.results_to_table[selected_index]
-        self.fixIndexes(selected_index) 
+        self.fixIndexes(selected_index)
         self.updateTable()
-        
+
     # fix all indexes if a row gets deleted
     def fixIndexes(self, start_index):
         for key, value in self.racing_robots.items():
             if value[0] > start_index:
                 self.racing_robots[key][0] = value[0] - 1
         self.timer.fixIndexes(start_index)
-    
+
     # update information showed in table
     def updateTable(self):
         self.table = []
         finished_rows = []
-        
+
         for i, lap_time in enumerate(self.results_to_table):
             if lap_time in self.results_to_save:
                 finished_rows.append(i)
-        
+
         if self.results_to_table:
             for index, entry in enumerate(self.results_to_table):
                 for robot_name, lap_time in entry.items():
                     self.table.append(
-                            [
-                                index + 1,
-                                robot_name,
-                                formatTime(lap_time),
-                                " "
-                            ]
-                        )
+                        [index + 1, robot_name, formatTime(lap_time), " "]
+                    )
                     if index in finished_rows:
                         self.table[index][3] = self.checkmark
 
@@ -353,13 +397,15 @@ class TrackingModel(QtCore.QAbstractTableModel):
             self.table.append([])  # Add at least one row with column, otherwise error
 
         self.layoutChanged.emit()  # Notify table view about data change
-    
+
+        self.autoScroll()
+
     # update counting time to show in table
     def updateTimer(self, robots_dict, index_list):
         for index, key in zip(index_list, robots_dict):
             self.results_to_table[index][key] = robots_dict[key][0]
         self.updateTable()
-        
+
     def clearTimer(self):
         if self.timer_running:
             self.timer.stop()
