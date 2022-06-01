@@ -14,7 +14,7 @@ def formatTime(time_ms):
     seconds = math.floor(
         (time_ms % MINUTE_IN_MS) / SECOND_IN_MS
     )  # Remainder of full minute
-    # milliseconds = math.floor(((time_ms % MINUTE_IN_MS) % SECOND_IN_MS))
+    milliseconds = math.floor(((time_ms % MINUTE_IN_MS) % SECOND_IN_MS))
 
     minutes_str = ""
     if minutes < 10:
@@ -28,15 +28,15 @@ def formatTime(time_ms):
     else:
         seconds_str = f":{str(seconds)}"
 
-    # milliseconds_str = ""
-    # if milliseconds < 10:
-    #     milliseconds_str = ":00" + str(milliseconds)
-    # elif milliseconds < 100:
-    #     milliseconds_str = ":0" + str(milliseconds)
-    # else:
-    #     milliseconds_str = ":" + str(milliseconds)
+    milliseconds_str = ""
+    if milliseconds < 10:
+        milliseconds_str = ":00" + str(milliseconds)
+    elif milliseconds < 100:
+        milliseconds_str = ":0" + str(milliseconds)
+    else:
+        milliseconds_str = ":" + str(milliseconds)
 
-    return minutes_str + seconds_str
+    return minutes_str + seconds_str + milliseconds_str
 
 
 def clearLayout(layout):
